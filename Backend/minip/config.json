@@ -1,0 +1,32 @@
+{
+  "collection_interval_seconds": 7,
+  "collection_window_min": 5,
+  "collection_window_max": 10,
+  "anomaly_threshold": 0.7,
+  "log_dir": "logs",
+  "history_file": "history.json",
+  "alerts_file": "alerts.json",
+  "remote_endpoints": [
+    {
+      "node_id": "server_001",
+      "url": "https://api.example.com/logs",
+      "auth_type": "bearer",
+      "auth_token": "your_token_here",
+      "timeout": 30
+    }
+  ],
+  "command_timeout": 30,
+  "command_whitelist": [
+    "wmic",
+    "tasklist",
+    "netstat",
+    "wevtutil",
+    "top",
+    "ps",
+    "free",
+    "journalctl",
+    "ss"
+  ],
+  "log_level": "INFO",
+  "application_log_file": "application.log"
+}
