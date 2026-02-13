@@ -16,19 +16,34 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
     },
     backgroundColor: '#0a0e27',
     icon: path.join(__dirname, '../public/icon.png'),
   });
 
-  // Load the app
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173');
+  // Load the app - use app.isPackaged to detect dev vs production
+  if (!app.isPackaged) {
+    // Development mode - load from Vite dev server
+    console.log('Loading from Vite dev server: http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5173').catch(err => {
+      console.error('Failed to load URL:', err);
+    });
     mainWindow.webContents.openDevTools();
   } else {
+    // Production mode - load built files
+    console.log('Loading from built files');
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  // Debug: Log when page finishes loading
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('Page finished loading');
+  });
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription);
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
