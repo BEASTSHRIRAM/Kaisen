@@ -1,0 +1,4 @@
+# file: C:\myprojects\Kaisen\Backend\minip\src\config.py
+# hypothesis_version: 6.151.6
+
+[-30.0, -10.0, -5.0, -0.1, 0.0, 0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6, 0.65, 0.7, 0.95, 0.99, 0.995, 1.0, 2.0, 2.5, 5.0, 7.5, 10.0, 20.0, 30.0, 50.0, 80.0, 100.0, 200.0, 500.0, 100, 128, 1000, 10000, 'AttackConfig', 'Config', '__main__', 'active', 'attack_login_rate', 'attack_mean', 'attack_std', 'benign_login_rate', 'block_ip', 'bruteforce', 'compromised', 'correct_no_action', 'cpu_usage', 'data', 'data_loss', 'do_nothing', 'early_containment', 'encryption', 'encryption_file_rate', 'execution', 'execution_file_rate', 'false_positive', 'file.csv', 'isolate_host', 'late_containment', 'lock_account', 'missed_attack', 'models', 'normal', 'normal_file_rate', 'normal_mean', 'normal_std', 'post_attack_rate', 'probing', 'r', 'ransomware', 'relu', 'step_penalty', 'terminate_process', 'unnecessary_action']

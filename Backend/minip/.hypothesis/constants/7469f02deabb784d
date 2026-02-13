@@ -1,0 +1,4 @@
+# file: C:\myprojects\Kaisen\Backend\minip\src\error_handler.py
+# hypothesis_version: 6.151.6
+
+['critical', 'recoverable', 'warning']

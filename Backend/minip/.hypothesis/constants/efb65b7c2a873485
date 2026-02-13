@@ -1,0 +1,4 @@
+# file: C:\myprojects\Kaisen\Backend\minip\src\graph_engine.py
+# hypothesis_version: 6.151.6
+
+[0.0, 0.5, 0.7, 1.0, 20.0, 200.0, '+00:00', 'GraphEngine', 'Z', 'anomaly_score', 'connection_count', 'edge_count', 'edge_type', 'edges', 'external_ip', 'failed_attempts', 'generated_at', 'id', 'ip_connection', 'machine', 'metadata', 'network_connection', 'node_count', 'node_id', 'node_type', 'nodes', 'process', 'process_spawn', 'remote_server', 'risk_score', 'service', 'service_access', 'source', 'target', 'timestamp', 'type', 'unknown']

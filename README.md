@@ -1,66 +1,148 @@
-# Kaisen - Automated Security Incident Response System
+# Kaisen - Automated Data center Security Incident and  Response System
 
 A comprehensive security monitoring and incident response system combining reinforcement learning-based anomaly detection with real-time log collection and attack graph modeling.
 
-## 🎯 Overview
+## 🎯 Project Overview
 
-Kaisen is an intelligent security system that learns to detect and respond to cyber attacks without explicit detection rules. It combines:
+Kaisen consists of two main components:
 
-- **Reinforcement Learning Agent**: Learns optimal defensive actions through experience
-- **Real-Time Log Collection**: Monitors system metrics across Windows and Linux
-- **IP Address Tracking**: Identifies and tracks suspicious external connections
-- **Attack Graph Modeling**: Visualizes potential attack paths through infrastructure
-- **Automated Alerting**: Generates alerts with suspected attack reasons
+### 1. RL-Based Anomaly Detection 
+A reinforcement learning agent that:
+- Observes noisy behavioral metrics (login rates, file access patterns, CPU usage, **rate-of-change features**)
+- Learns to select defensive actions (block IP, lock account, terminate process, isolate host)
+- Responds to attacks early while minimizing false positives
+- Operates under uncertainty without knowing the true attack state
 
-## 🏗️ Architecture
+### 2. Log Collection Backend 
+A cross-platform log collection and analysis system that:
+- Collects system logs from Windows and Linux machines (local and remote)
+- Extracts and tracks IP addresses from network connections
+- Processes raw logs into structured feature vectors
+- Uses the pre-trained RL model for real-time anomaly detection
+- Builds attack graphs to visualize potential attack paths
+- Generates alerts with suspicious IP identification
+- Provides CLI interface for monitoring and management
+
+**Quick Start (Log Collection):**
+```bash
+# Start continuous log collection
+python src/log_collection_main.py start
+
+# Single collection cycle
+python src/log_collection_main.py collect-once
+
+# Export attack graph
+python src/log_collection_main.py export-graph
+```
+
+## 📁 Project Structure
 
 ```
-Kaisen/
-├── Backend/
-│   ├── minip/                 # Main application
-│   │   ├── src/               # Source code
-│   │   ├── models/            # Trained RL models
-│   │   ├── logs/              # Collected logs & alerts
-│   │   ├── tests/             # Unit & property tests
-│   │   └── data/              # Training datasets
-│   └── README.md              # Detailed backend documentation
-└── Frontend/                  # (Coming soon)
+Backend/minip/
+├── main.py                         # RL training entry point
+├── config.json                     # Log collection configuration
+├── requirements.txt                # Python dependencies
+├── data/                           # Training datasets
+│   ├── Monday-WorkingHours.pcap_ISCX.csv
+│   ├── Tuesday-WorkingHours.pcap_ISCX.csv
+│   └── file.csv
+├── src/
+│   # RL Components
+│   ├── config.py                   # RL configuration
+│   ├── preprocess.py               # Data preprocessing
+│   ├── attack_simulator.py         # Attack simulation
+│   ├── incident_env.py             # OpenAI Gym environment
+│   ├── agent.py                    # DQN agent
+│   ├── train.py                    # Training script
+│   ├── evaluate.py                 # Evaluation & visualization
+│   # Log Collection Components (New)
+│   ├── collection_config.py        # Log collection config
+│   ├── data_models.py              # Data structures
+│   ├── terminal_executor.py        # Safe command execution
+│   ├── data_processor.py           # Log parsing & IP extraction
+│   ├── log_collector.py            # Local log collection
+│   ├── remote_log_collector.py     # Remote log fetching
+│   ├── model_interface.py          # Anomaly detection interface
+│   ├── alert_engine.py             # Alert generation
+│   ├── graph_engine.py             # Attack graph modeling
+│   ├── storage_manager.py          # Data persistence
+│   └── log_collection_main.py      # Log collection CLI
+├── models/                         # Saved model checkpoints
+├── logs/                           # Collected logs & alerts
+│   ├── history.json                # System metrics history
+│   ├── alerts.json                 # Generated alerts
+│   └── application.log             # Application logs
+└── tests/                          # Unit & property tests
+    ├── unit/
+    └── property/
 ```
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### RL Training
+
+#### 1. Install Dependencies
 
 ```bash
-# Python 3.8+
-python --version
-
-# Install dependencies
 cd Backend/minip
 pip install -r requirements.txt
 ```
 
-### 1. Train the RL Model (Optional - pre-trained model included)
+#### 2. Run Complete Pipeline
 
 ```bash
-cd Backend/minip
-python main.py train --episodes 500 --n-step --dueling
+python main.py all --episodes 500
 ```
 
-### 2. Start Log Collection & Monitoring
+This will:
+1. Preprocess the datasets
+2. Train the RL agent for 500 episodes
+3. Generate training visualizations
+4. Run a demo showing the trained agent
+
+#### 3. Individual Commands
 
 ```bash
-# Configure settings (optional)
-# Edit Backend/minip/config.json
+# Preprocess datasets
+python main.py preprocess
 
+# Train the agent (with all enhancements)
+python main.py train --episodes 1000 --n-step --dueling --compare
+
+# Evaluate trained model
+python main.py evaluate --analyze-policy
+
+# Generate visualizations
+python main.py visualize
+
+# Run interactive demo
+python main.py demo --interactive
+```
+
+### Log Collection System
+
+#### 1. Configure
+
+Edit `config.json` to set:
+- Collection interval (default: 7 seconds)
+- Anomaly threshold (default: 0.7)
+- Remote endpoints (optional)
+- Log file paths
+
+#### 2. Run Log Collection
+
+```bash
 # Start continuous monitoring
 python src/log_collection_main.py start
 
-# Or run a single collection cycle
+# Single collection cycle (for testing)
 python src/log_collection_main.py collect-once
+
+# Export attack graph to JSON
+python src/log_collection_main.py export-graph
 ```
 
-### 3. View Results
+#### 3. View Results
 
 ```bash
 # View collected logs
@@ -69,168 +151,229 @@ cat logs/history.json
 # View generated alerts
 cat logs/alerts.json
 
-# Export attack graph
-python src/log_collection_main.py export-graph
+# View application logs
+cat logs/application.log
 ```
 
-## ✨ Key Features
+## 🔍 Log Collection Features
 
-### 🤖 Reinforcement Learning
-- **DQN Agent** with Double DQN, N-step returns, and Dueling architecture
-- **Learns from experience** without predefined attack signatures
-- **Adaptive responses** based on observed behavioral patterns
-- **Trained on real datasets**: CICIDS 2017 and CERT Insider Threat
+### Cross-Platform Support
+- **Windows**: Uses `wmic`, `tasklist`, `netstat`, `wevtutil`
+- **Linux**: Uses `top`, `ps`, `free`, `netstat`/`ss`, `journalctl`
+- Automatic OS detection at startup
 
-### 📊 Real-Time Monitoring
-- **Cross-platform**: Windows and Linux support
-- **System metrics**: CPU, memory, processes, network connections
-- **Failed login tracking**: Monitors authentication attempts
-- **Configurable intervals**: 5-10 second collection windows
+### IP Address Tracking
+- Extracts source and destination IPs from network connections
+- Tracks connection counts per IP
+- Monitors failed login attempts per IP
+- Identifies suspicious IPs exhibiting abnormal behavior
+- Includes suspicious IPs in generated alerts
 
-### 🌐 IP Address Intelligence
-- **Extracts source/destination IPs** from network connections
-- **Tracks connection patterns** per IP address
-- **Identifies suspicious IPs** with abnormal behavior
-- **Failed attempt correlation** per IP address
+### Attack Graph Modeling
+- Builds directed graphs using NetworkX
+- Nodes: machines, processes, services, external IPs
+- Edges: network connections, process spawns, IP connections
+- Risk score propagation with decay factor (0.7)
+- Identifies highest-risk attack paths
+- JSON export for visualization
 
-### 🕸️ Attack Graph Visualization
-- **NetworkX-based graphs** showing attack paths
-- **Risk score propagation** with decay factor
-- **Multiple node types**: machines, processes, services, external IPs
-- **JSON export** for visualization tools
+### Remote Log Collection
+- Fetch logs from remote machines via HTTP/HTTPS APIs
+- Support for API key and bearer token authentication
+- Automatic retry with exponential backoff
+- Merge remote and local logs in unified pipeline
 
-### 🔔 Intelligent Alerting
-- **Anomaly score-based** threshold detection
-- **Suspected reason analysis**: high CPU, failed logins, excessive connections
-- **Severity levels**: low, medium, high, critical
-- **Suspicious IP lists** included in alerts
+### Real-Time Anomaly Detection
+- Uses pre-trained RL model (`best_model.h5`)
+- Processes logs every 5-10 seconds
+- Generates alerts when anomaly score > threshold
+- Includes suspected reason analysis (high CPU, failed logins, etc.)
 
-### 🌍 Remote Log Collection
-- **HTTP/HTTPS API support** for remote machines
-- **Authentication**: API key and bearer token
-- **Automatic retry** with exponential backoff
-- **Unified pipeline** merging local and remote logs
+## 🔍 Log Collection Features
 
-## 📖 Documentation
+### Cross-Platform Support
+- **Windows**: Uses `wmic`, `tasklist`, `netstat`, `wevtutil`
+- **Linux**: Uses `top`, `ps`, `free`, `netstat`/`ss`, `journalctl`
+- Automatic OS detection at startup
 
-- **[Backend README](Backend/README.md)**: Detailed technical documentation
-- **[RL Training Guide](Backend/README.md#-quick-start)**: Model training instructions
-- **[Log Collection Guide](Backend/README.md#log-collection-system)**: Setup and configuration
+### IP Address Tracking
+- Extracts source and destination IPs from network connections
+- Tracks connection counts per IP
+- Monitors failed login attempts per IP
+- Identifies suspicious IPs exhibiting abnormal behavior
+- Includes suspicious IPs in generated alerts
 
-## 🔬 Technical Highlights
+### Attack Graph Modeling
+- Builds directed graphs using NetworkX
+- Nodes: machines, processes, services, external IPs
+- Edges: network connections, process spawns, IP connections
+- Risk score propagation with decay factor (0.7)
+- Identifies highest-risk attack paths
+- JSON export for visualization
+
+### Remote Log Collection
+- Fetch logs from remote machines via HTTP/HTTPS APIs
+- Support for API key and bearer token authentication
+- Automatic retry with exponential backoff
+- Merge remote and local logs in unified pipeline
+
+### Real-Time Anomaly Detection
+- Uses pre-trained RL model (`best_model.h5`)
+- Processes logs every 5-10 seconds
+- Generates alerts when anomaly score > threshold
+- Includes suspected reason analysis (high CPU, failed logins, etc.)
+
+## 🧠 Technical Details
 
 ### Enhanced Observation Space (10D)
-- Base metrics: login rate, file access, CPU usage
-- **Rate-of-change features**: Detect attack escalation
-- **Moving averages**: Smooth out noise
-- **Sustained anomaly indicators**: Identify persistent threats
 
-### Statistical Rigor
-- **Poisson distributions** for event modeling
-- **Welch's t-test** for significance testing
-- **Cohen's d** effect size analysis
-- **95% confidence intervals**
+The environment provides an **enhanced 10-dimensional observation space** for better attack detection:
 
-### Attack Types Modeled
-1. **Brute-Force Attacks**: Login attempt patterns
-2. **Ransomware**: File encryption behavior
+| Feature | Description | Range |
+|---------|-------------|-------|
+| `login_rate` | Login attempts per window | [0, 200] |
+| `file_access_rate` | File accesses per window | [0, 500] |
+| `cpu_usage` | CPU usage percentage | [0, 100] |
+| `login_delta` | **Rate of change** in login attempts | [-100, 100] |
+| `file_delta` | **Rate of change** in file access | [-200, 200] |
+| `cpu_delta` | **Rate of change** in CPU usage | [-50, 50] |
+| `login_ma` | **Moving average** of login rate | [0, 200] |
+| `file_ma` | **Moving average** of file rate | [0, 500] |
+| `sustained_indicator` | **Sustained anomaly** indicator | [0, 1] |
+| `normalized_time` | Episode progress | [0, 1] |
 
-## 🛠️ Configuration
+> **Note**: Rate-of-change features help detect attack **escalation** patterns.
 
-Edit `Backend/minip/config.json`:
+### Attack Simulation
 
-```json
-{
-  "collection_interval_seconds": 7,
-  "anomaly_threshold": 0.7,
-  "log_dir": "logs",
-  "remote_endpoints": [
-    {
-      "node_id": "server_001",
-      "url": "https://api.example.com/logs",
-      "auth_type": "bearer",
-      "auth_token": "your_token_here"
-    }
-  ],
-  "log_level": "INFO"
+Two attack types modeled as probabilistic FSMs:
+
+**Brute-Force Attack:**
+```
+Normal → Probing → Active → Compromised
+```
+
+**Ransomware Attack:**
+```
+Normal → Execution → Encryption → Data Loss
+```
+
+### Statistical Modeling
+
+| Approach | Application |
+|----------|-------------|
+| **Poisson distributions** | Event counts (login attempts, file accesses) |
+| **Local rate modeling** | Captures burstiness in network activity |
+| **Normal distributions** | CPU usage with N(30,5) normal, N(80,5) attack |
+
+> **Dataset Note**: CICIDS 2017 provides network flow features. `Total Fwd Packets` is used as a proxy for login attempts since explicit authentication logs are unavailable.
+
+### DQN Agent Enhancements
+
+| Feature | Description | Flag |
+|---------|-------------|------|
+| **Double DQN** | Reduces overestimation bias | Default |
+| **N-step Returns** | Better temporal credit assignment | `--n-step` |
+| **Dueling Architecture** | Separate value/advantage streams | `--dueling` |
+| **Prioritized Replay** | Sample important experiences more | `--prioritized-replay` |
+
+### Reward Structure
+
+```python
+rewards = {
+    "early_containment": +50,    # Stopped attack in stage 1-2
+    "late_containment": +20,     # Stopped attack in stage 3+
+    "correct_no_action": +1,     # No action when no attack
+    "false_positive": -10,       # Action when no attack
+    "missed_attack": -30,        # Attack reached final state
+    "step_penalty": -0.1         # Encourages efficiency
 }
 ```
 
-## 📊 Example Output
+## 📊 Statistical Significance Testing
 
-### Alert Example
-```json
-{
-  "alert_id": "550e8400-e29b-41d4-a716-446655440000",
-  "node_id": "local",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "anomaly_score": 0.85,
-  "severity": "high",
-  "suspected_reason": "high CPU usage, multiple failed logins",
-  "suspicious_ips": ["203.0.113.45", "198.51.100.23"]
-}
-```
-
-### Attack Graph Export
-```json
-{
-  "nodes": [
-    {"id": "machine_001", "type": "machine", "anomaly_score": 0.85},
-    {"id": "203.0.113.45", "type": "external_ip", "anomaly_score": 0.72}
-  ],
-  "edges": [
-    {"source": "machine_001", "target": "203.0.113.45", "type": "ip_connection"}
-  ]
-}
-```
-
-## 🧪 Testing
+The project includes rigorous statistical analysis:
 
 ```bash
-cd Backend/minip
-
-# Run all tests
-pytest tests/
-
-# Run unit tests only
-pytest tests/unit/
-
-# Run property-based tests
-pytest tests/property/
+python main.py train --episodes 500 --compare
 ```
 
-## 📚 Datasets
+Outputs include:
+- **Welch's t-test** with p-values
+- **Cohen's d** effect size
+- **95% confidence intervals**
+- **Mann-Whitney U test** (non-parametric)
 
-- **CICIDS 2017**: Network intrusion detection dataset
-- **CERT Insider Threat**: Insider threat behavior dataset
+Example output:
+```
+DQN vs random:
+  T-statistic: 8.4521
+  P-value: 0.000001
+  Cohen's d: 1.23
+  95% CI: (12.45, 25.67)
+  Significant: ✓
+```
 
-## 🤝 Contributing
+## 📈 Hyperparameter Sensitivity Analysis
 
-This is an academic project. For questions or suggestions, please open an issue.
+Run sensitivity studies on key hyperparameters:
+
+```python
+from src.evaluate import HyperparameterAnalyzer
+from src.train import Trainer
+
+analyzer = HyperparameterAnalyzer()
+results = analyzer.run_sensitivity_study(
+    Trainer,
+    param_name='learning_rate',
+    param_values=[1e-4, 5e-4, 1e-3, 5e-3],
+    num_episodes=200,
+    num_seeds=3
+)
+analyzer.plot_sensitivity('learning_rate')
+```
+
+## 🔧 Training Options
+
+```bash
+python main.py train \
+    --episodes 1000 \
+    --attack-type random \
+    --n-step \
+    --n-steps 3 \
+    --dueling \
+    --checkpoint-dir models \
+    --compare
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--episodes` | Training episodes | 500 |
+| `--attack-type` | bruteforce, ransomware, both, random | random |
+| `--n-step` | Enable N-step returns | False |
+| `--n-steps` | N for N-step returns | 3 |
+| `--dueling` | Use dueling architecture | False |
+| `--no-enhanced` | Use 4D observation instead of 10D | False |
+| `--compare` | Compare with baselines + statistics | False |
+
+## 📚 References
+
+- CICIDS 2017 Dataset: Canadian Institute for Cybersecurity
+- CERT Insider Threat Dataset: Software Engineering Institute
+- DQN: Mnih et al., "Human-level control through deep reinforcement learning"
+- Double DQN: van Hasselt et al., "Deep Reinforcement Learning with Double Q-learning"
+- Dueling DQN: Wang et al., "Dueling Network Architectures for Deep Reinforcement Learning"
+
+## 🎓 Academic Rigor
+
+This implementation includes features expected in academic work:
+
+- ✅ **Poisson-based simulation** with empirical justification
+- ✅ **Statistical significance testing** (t-tests, effect sizes)
+- ✅ **Ablation study support** (baseline comparisons)
+- ✅ **Hyperparameter sensitivity analysis**
+- ✅ **Documented limitations** (proxy features, synthetic attacks)
 
 ## 📄 License
 
-Educational use only - Mini Project
-
-## 🎓 Academic Context
-
-This project demonstrates:
-- Reinforcement learning for cybersecurity
-- Real-time anomaly detection
-- Attack graph modeling
-- Cross-platform system monitoring
-- Statistical validation of ML models
-
-## 🔮 Future Work
-
-- [ ] Frontend dashboard for visualization
-- [ ] Additional attack type models
-- [ ] Multi-agent coordination
-- [ ] Integration with SIEM systems
-- [ ] Real-time graph visualization
-
----
-
-**Built with**: Python, TensorFlow, OpenAI Gym, NetworkX, Hypothesis
-
-**Status**: Active Development 🚧
+This project is for educational purposes as part of a mini project.

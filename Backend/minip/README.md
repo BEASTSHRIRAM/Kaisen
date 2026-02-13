@@ -1,19 +1,19 @@
-# Kaisen - Automated Security Incident Response System
+# Kaisen - Automated Data center Security Incident and  Response System
 
 A comprehensive security monitoring and incident response system combining reinforcement learning-based anomaly detection with real-time log collection and attack graph modeling.
 
 ## 🎯 Project Overview
 
-Kaisen consists of two integrated components:
+Kaisen consists of two main components:
 
-### 1. RL-Based Anomaly Detection
+### 1. RL-Based Anomaly Detection 
 A reinforcement learning agent that:
 - Observes noisy behavioral metrics (login rates, file access patterns, CPU usage, **rate-of-change features**)
 - Learns to select defensive actions (block IP, lock account, terminate process, isolate host)
 - Responds to attacks early while minimizing false positives
 - Operates under uncertainty without knowing the true attack state
 
-### 2. Log Collection Backend
+### 2. Log Collection Backend 
 A cross-platform log collection and analysis system that:
 - Collects system logs from Windows and Linux machines (local and remote)
 - Extracts and tracks IP addresses from network connections
@@ -23,10 +23,22 @@ A cross-platform log collection and analysis system that:
 - Generates alerts with suspicious IP identification
 - Provides CLI interface for monitoring and management
 
+**Quick Start (Log Collection):**
+```bash
+# Start continuous log collection
+python src/log_collection_main.py start
+
+# Single collection cycle
+python src/log_collection_main.py collect-once
+
+# Export attack graph
+python src/log_collection_main.py export-graph
+```
+
 ## 📁 Project Structure
 
 ```
-minip/
+Backend/minip/
 ├── main.py                         # RL training entry point
 ├── config.json                     # Log collection configuration
 ├── requirements.txt                # Python dependencies
@@ -43,7 +55,7 @@ minip/
 │   ├── agent.py                    # DQN agent
 │   ├── train.py                    # Training script
 │   ├── evaluate.py                 # Evaluation & visualization
-│   # Log Collection Components
+│   # Log Collection Components (New)
 │   ├── collection_config.py        # Log collection config
 │   ├── data_models.py              # Data structures
 │   ├── terminal_executor.py        # Safe command execution
@@ -67,15 +79,16 @@ minip/
 
 ## 🚀 Quick Start
 
-### Install Dependencies
+### RL Training
+
+#### 1. Install Dependencies
 
 ```bash
+cd Backend/minip
 pip install -r requirements.txt
 ```
 
-### RL Training
-
-#### Run Complete Pipeline
+#### 2. Run Complete Pipeline
 
 ```bash
 python main.py all --episodes 500
@@ -87,7 +100,7 @@ This will:
 3. Generate training visualizations
 4. Run a demo showing the trained agent
 
-#### Individual Commands
+#### 3. Individual Commands
 
 ```bash
 # Preprocess datasets
@@ -108,7 +121,7 @@ python main.py demo --interactive
 
 ### Log Collection System
 
-#### Configure
+#### 1. Configure
 
 Edit `config.json` to set:
 - Collection interval (default: 7 seconds)
@@ -116,7 +129,7 @@ Edit `config.json` to set:
 - Remote endpoints (optional)
 - Log file paths
 
-#### Run Log Collection
+#### 2. Run Log Collection
 
 ```bash
 # Start continuous monitoring
@@ -129,7 +142,7 @@ python src/log_collection_main.py collect-once
 python src/log_collection_main.py export-graph
 ```
 
-#### View Results
+#### 3. View Results
 
 ```bash
 # View collected logs
@@ -141,6 +154,74 @@ cat logs/alerts.json
 # View application logs
 cat logs/application.log
 ```
+
+## 🔍 Log Collection Features
+
+### Cross-Platform Support
+- **Windows**: Uses `wmic`, `tasklist`, `netstat`, `wevtutil`
+- **Linux**: Uses `top`, `ps`, `free`, `netstat`/`ss`, `journalctl`
+- Automatic OS detection at startup
+
+### IP Address Tracking
+- Extracts source and destination IPs from network connections
+- Tracks connection counts per IP
+- Monitors failed login attempts per IP
+- Identifies suspicious IPs exhibiting abnormal behavior
+- Includes suspicious IPs in generated alerts
+
+### Attack Graph Modeling
+- Builds directed graphs using NetworkX
+- Nodes: machines, processes, services, external IPs
+- Edges: network connections, process spawns, IP connections
+- Risk score propagation with decay factor (0.7)
+- Identifies highest-risk attack paths
+- JSON export for visualization
+
+### Remote Log Collection
+- Fetch logs from remote machines via HTTP/HTTPS APIs
+- Support for API key and bearer token authentication
+- Automatic retry with exponential backoff
+- Merge remote and local logs in unified pipeline
+
+### Real-Time Anomaly Detection
+- Uses pre-trained RL model (`best_model.h5`)
+- Processes logs every 5-10 seconds
+- Generates alerts when anomaly score > threshold
+- Includes suspected reason analysis (high CPU, failed logins, etc.)
+
+## 🔍 Log Collection Features
+
+### Cross-Platform Support
+- **Windows**: Uses `wmic`, `tasklist`, `netstat`, `wevtutil`
+- **Linux**: Uses `top`, `ps`, `free`, `netstat`/`ss`, `journalctl`
+- Automatic OS detection at startup
+
+### IP Address Tracking
+- Extracts source and destination IPs from network connections
+- Tracks connection counts per IP
+- Monitors failed login attempts per IP
+- Identifies suspicious IPs exhibiting abnormal behavior
+- Includes suspicious IPs in generated alerts
+
+### Attack Graph Modeling
+- Builds directed graphs using NetworkX
+- Nodes: machines, processes, services, external IPs
+- Edges: network connections, process spawns, IP connections
+- Risk score propagation with decay factor (0.7)
+- Identifies highest-risk attack paths
+- JSON export for visualization
+
+### Remote Log Collection
+- Fetch logs from remote machines via HTTP/HTTPS APIs
+- Support for API key and bearer token authentication
+- Automatic retry with exponential backoff
+- Merge remote and local logs in unified pipeline
+
+### Real-Time Anomaly Detection
+- Uses pre-trained RL model (`best_model.h5`)
+- Processes logs every 5-10 seconds
+- Generates alerts when anomaly score > threshold
+- Includes suspected reason analysis (high CPU, failed logins, etc.)
 
 ## 🧠 Technical Details
 

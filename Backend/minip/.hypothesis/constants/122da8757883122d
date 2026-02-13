@@ -1,0 +1,4 @@
+# file: C:\myprojects\Kaisen\Backend\minip\src\collection_config.py
+# hypothesis_version: 6.151.6
+
+[0.7, 'CollectionConfig', 'INFO', '__main__', 'alerts.json', 'alerts_file', 'anomaly_threshold', 'application.log', 'application_log_file', 'best_model.h5', 'command_timeout', 'command_whitelist', 'config.json', 'free', 'history.json', 'history_file', 'journalctl', 'log_dir', 'log_level', 'logs', 'model_path', 'models', 'netstat', 'ps', 'r', 'remote_endpoints', 'ss', 'tasklist', 'top', 'wevtutil', 'wmic']

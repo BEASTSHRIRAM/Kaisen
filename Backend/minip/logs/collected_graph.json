@@ -1,0 +1,173 @@
+{
+  "nodes": [
+    {
+      "id": "local",
+      "type": "machine",
+      "anomaly_score": 0.9882742166519165,
+      "risk_score": 0.9882742166519165,
+      "timestamp": "2026-02-13T09:20:59.808756Z"
+    },
+    {
+      "id": "51.104.15.253",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 1,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "162.159.136.232",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 1,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "20.189.173.14",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 1,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "127.0.0.1",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 39,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "0.0.0.0",
+      "type": "external_ip",
+      "anomaly_score": 0.28,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 56,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "192.168.29.188",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.0,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 6,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "162.159.135.234",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 1,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "18.97.36.68",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 1,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "13.107.5.93",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 1,
+        "failed_attempts": 0
+      }
+    },
+    {
+      "id": "72.218.47.59",
+      "type": "external_ip",
+      "anomaly_score": 0.0,
+      "risk_score": 0.6917919516563416,
+      "timestamp": "2026-02-13T09:20:59.808756Z",
+      "metadata": {
+        "connection_count": 1,
+        "failed_attempts": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "local",
+      "target": "0.0.0.0",
+      "type": "ip_connection"
+    },
+    {
+      "source": "local",
+      "target": "127.0.0.1",
+      "type": "ip_connection"
+    },
+    {
+      "source": "local",
+      "target": "18.97.36.68",
+      "type": "ip_connection"
+    },
+    {
+      "source": "local",
+      "target": "51.104.15.253",
+      "type": "ip_connection"
+    },
+    {
+      "source": "local",
+      "target": "20.189.173.14",
+      "type": "ip_connection"
+    },
+    {
+      "source": "local",
+      "target": "13.107.5.93",
+      "type": "ip_connection"
+    },
+    {
+      "source": "local",
+      "target": "162.159.135.234",
+      "type": "ip_connection"
+    },
+    {
+      "source": "local",
+      "target": "162.159.136.232",
+      "type": "ip_connection"
+    },
+    {
+      "source": "local",
+      "target": "72.218.47.59",
+      "type": "ip_connection"
+    }
+  ],
+  "metadata": {
+    "generated_at": "2026-02-13T09:21:00.084357Z",
+    "node_count": 11,
+    "edge_count": 9
+  }
+}

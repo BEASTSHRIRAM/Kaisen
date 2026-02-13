@@ -1,0 +1,4 @@
+# file: C:\myprojects\Kaisen\Backend\minip\src\log_collector.py
+# hypothesis_version: 6.151.6
+
+[5.0, '\nTest completed', 'Attack graph updated', 'Collection failed', 'LogCollectionThread', 'LogCollector', 'LogCollector started', 'LogCollector stopped', 'Z', '__main__', 'auth_token', 'auth_type', 'config.json', 'cpu', 'cpu_usage', 'destination_ips', 'failed_logins', 'free -m', 'linux', 'machine', 'memory', 'memory_usage', 'netstat -an', 'network', 'network_connections', 'node_id', 'process_count', 'processes', 'ps aux', 'remote_server', 'source_ips', 'tasklist', 'timeout', 'timestamp', 'unique_ip_count', 'url', 'w', 'windows']
