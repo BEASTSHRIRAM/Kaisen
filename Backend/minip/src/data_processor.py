@@ -11,6 +11,7 @@ from typing import Dict, List, Tuple, Any, Optional
 from datetime import datetime
 
 from src.data_models import FeatureVector
+from src.error_handler import handle_warning, handle_recoverable_error
 
 
 logger = logging.getLogger(__name__)
@@ -49,44 +50,122 @@ class DataProcessor:
         
         Returns:
             FeatureVector with parsed metrics and IP information
+        
+        Requirements:
+            - 4.7: Handle parsing failures gracefully by setting fields to null
+            - 10.2: Continue operation after non-critical errors
         """
-        # Parse basic metrics
-        cpu_usage = self._parse_cpu(raw_data.get('cpu', ''))
-        memory_usage = self._parse_memory(raw_data.get('memory', ''))
-        process_count = self._parse_process_count(raw_data.get('processes', ''))
-        network_connections = self._parse_network_connections(raw_data.get('network', ''))
-        failed_logins = self._parse_failed_logins(raw_data.get('failed_logins', ''))
+        # Parse basic metrics with error handling
+        cpu_usage = self._safe_parse(
+            lambda: self._parse_cpu(raw_data.get('cpu', '')),
+            "CPU usage",
+            0.0
+        )
+        memory_usage = self._safe_parse(
+            lambda: self._parse_memory(raw_data.get('memory', '')),
+            "memory usage",
+            0.0
+        )
+        process_count = self._safe_parse(
+            lambda: self._parse_process_count(raw_data.get('processes', '')),
+            "process count",
+            0
+        )
+        network_connections = self._safe_parse(
+            lambda: self._parse_network_connections(raw_data.get('network', '')),
+            "network connections",
+            0
+        )
+        failed_logins = self._safe_parse(
+            lambda: self._parse_failed_logins(raw_data.get('failed_logins', '')),
+            "failed logins",
+            0
+        )
         
-        # Extract IP information from network data
-        source_ips, dest_ips = self._extract_ips_from_netstat(raw_data.get('network', ''))
+        # Extract IP information from network data with error handling
+        source_ips, dest_ips = self._safe_parse(
+            lambda: self._extract_ips_from_netstat(raw_data.get('network', '')),
+            "IP addresses",
+            ([], [])
+        )
         
-        # Compute IP statistics
-        ip_stats = self._compute_ip_statistics(
-            source_ips,
-            dest_ips,
-            raw_data.get('failed_logins', '')
+        # Compute IP statistics with error handling
+        ip_stats = self._safe_parse(
+            lambda: self._compute_ip_statistics(
+                source_ips,
+                dest_ips,
+                raw_data.get('failed_logins', '')
+            ),
+            "IP statistics",
+            {
+                'unique_ip_count': 0,
+                'failed_attempts_per_ip': {},
+                'connection_count_per_ip': {}
+            }
         )
         
         # Create timestamp
-        timestamp = datetime.utcnow().isoformat() + 'Z'
+        try:
+            timestamp = datetime.utcnow().isoformat() + 'Z'
+        except Exception as e:
+            handle_warning("DataProcessor", f"Failed to generate timestamp: {str(e)}")
+            timestamp = datetime.now().isoformat() + 'Z'
         
         # Build feature vector
-        feature_vector = FeatureVector(
-            cpu_usage=cpu_usage,
-            memory_usage=memory_usage,
-            process_count=process_count,
-            network_connections=network_connections,
-            failed_logins=failed_logins,
-            timestamp=timestamp,
-            node_id=node_id,
-            unique_ip_count=ip_stats['unique_ip_count'],
-            failed_attempts_per_ip=ip_stats['failed_attempts_per_ip'],
-            connection_count_per_ip=ip_stats['connection_count_per_ip'],
-            source_ips=source_ips,
-            destination_ips=dest_ips
-        )
+        try:
+            feature_vector = FeatureVector(
+                cpu_usage=cpu_usage,
+                memory_usage=memory_usage,
+                process_count=process_count,
+                network_connections=network_connections,
+                failed_logins=failed_logins,
+                timestamp=timestamp,
+                node_id=node_id,
+                unique_ip_count=ip_stats['unique_ip_count'],
+                failed_attempts_per_ip=ip_stats['failed_attempts_per_ip'],
+                connection_count_per_ip=ip_stats['connection_count_per_ip'],
+                source_ips=source_ips,
+                destination_ips=dest_ips
+            )
+            return feature_vector
+        except Exception as e:
+            # This should rarely happen, but handle it
+            handle_recoverable_error(
+                "DataProcessor",
+                f"Failed to create FeatureVector: {str(e)}",
+                e
+            )
+            # Return a minimal valid feature vector
+            return FeatureVector(
+                cpu_usage=0.0,
+                memory_usage=0.0,
+                process_count=0,
+                network_connections=0,
+                failed_logins=0,
+                timestamp=timestamp,
+                node_id=node_id
+            )
+    
+    def _safe_parse(self, parse_func, metric_name: str, default_value):
+        """
+        Safely execute a parsing function with error handling.
         
-        return feature_vector
+        Args:
+            parse_func: Function to execute for parsing
+            metric_name: Name of the metric being parsed (for logging)
+            default_value: Value to return on error
+        
+        Returns:
+            Parsed value or default_value on error
+        """
+        try:
+            return parse_func()
+        except Exception as e:
+            handle_warning(
+                "DataProcessor",
+                f"Failed to parse {metric_name}: {str(e)}. Using default value {default_value}"
+            )
+            return default_value
     
     def validate(self, feature_vector: FeatureVector) -> bool:
         """

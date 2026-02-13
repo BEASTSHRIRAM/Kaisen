@@ -1,0 +1,4 @@
+# file: C:\myprojects\Kaisen\Backend\minip\src\storage_manager.py
+# hypothesis_version: 6.151.6
+
+[0.1, 0.85, 45.2, 62.8, 156, '\nRetrieving logs...', '192.168.1.100', 'StorageManager', 'Testing save_log...', 'Z', '__main__', 'alert_id', 'alerts.json', 'anomaly_score', 'feature_vector', 'high', 'high CPU usage', 'history.json', 'logs', 'node_id', 'r', 'severity', 'suspected_reason', 'suspicious_ips', 'test-alert-001', 'test_logs', 'test_node', 'timestamp', 'w']

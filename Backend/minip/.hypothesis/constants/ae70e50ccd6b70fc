@@ -1,0 +1,4 @@
+# file: C:\myprojects\Kaisen\Backend\minip\src\data_processor.py
+# hypothesis_version: 6.151.6
+
+[0.0, 100.0, 100, '(\\d+\\.\\d+)\\s+id', '=', 'CPU usage', 'DataProcessor', 'Event ID: 4625', 'EventID=4625', 'Failed password', 'IP addresses', 'IP statistics', 'Image Name', 'Mem:', 'Z', 'cpu', 'denied', 'failed', 'failed logins', 'failed password', 'failed_logins', 'failure', 'invalid', 'linux', 'local', 'memory', 'memory usage', 'network', 'network connections', 'process count', 'processes', 'unique_ip_count', 'windows']
