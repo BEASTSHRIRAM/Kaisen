@@ -242,8 +242,7 @@ class DataProcessor:
         Parse Windows CPU usage from wmic output.
         
         Expected format:
-        LoadPercentage
-        45
+        LoadPercentage  \n\n53              \n\n\n\n
         
         Args:
             output: Raw output from 'wmic cpu get loadpercentage'
@@ -252,13 +251,17 @@ class DataProcessor:
             CPU usage percentage (0-100), or 0.0 on failure
         """
         try:
-            lines = output.strip().split('\n')
-            if len(lines) >= 2:
-                # Second line contains the percentage
-                cpu_value = float(lines[1].strip())
+            # WMIC output has format: "Header  \n\nValue  \n\n"
+            # Split by any whitespace and filter empty strings
+            parts = [p.strip() for p in output.split() if p.strip()]
+            
+            # First part is header, second part is value
+            if len(parts) >= 2:
+                # Skip header, get the value
+                cpu_value = float(parts[1])
                 return max(0.0, min(100.0, cpu_value))
         except (ValueError, IndexError) as e:
-            logger.warning(f"Failed to parse Windows CPU usage: {e}")
+            logger.warning(f"Failed to parse Windows CPU usage: {e}. Output: {repr(output)}")
         return 0.0
     
     def _parse_linux_cpu(self, output: str) -> float:
@@ -290,8 +293,7 @@ class DataProcessor:
         Parse Windows memory usage from wmic output.
         
         Expected format:
-        FreePhysicalMemory  TotalVisibleMemorySize
-        4194304            16777216
+        FreePhysicalMemory  TotalVisibleMemorySize  \n\n963608              8074936                 \n\n
         
         Args:
             output: Raw output from 'wmic OS get FreePhysicalMemory,TotalVisibleMemorySize'
@@ -300,19 +302,21 @@ class DataProcessor:
             Memory usage percentage (0-100), or 0.0 on failure
         """
         try:
-            lines = output.strip().split('\n')
-            if len(lines) >= 2:
-                # Second line contains the values
-                values = lines[1].split()
-                if len(values) >= 2:
-                    free_memory = float(values[0])
-                    total_memory = float(values[1])
-                    if total_memory > 0:
-                        used_memory = total_memory - free_memory
-                        usage = (used_memory / total_memory) * 100.0
-                        return max(0.0, min(100.0, usage))
+            # WMIC output has format: "Header1  Header2  \n\nValue1  Value2  \n\n"
+            # Split by any whitespace and filter empty strings
+            parts = [p.strip() for p in output.split() if p.strip()]
+            
+            # Format: [FreePhysicalMemory, TotalVisibleMemorySize, free_value, total_value]
+            if len(parts) >= 4:
+                # Skip headers (first 2 parts), get values (last 2 parts)
+                free_memory = float(parts[2])
+                total_memory = float(parts[3])
+                if total_memory > 0:
+                    used_memory = total_memory - free_memory
+                    usage = (used_memory / total_memory) * 100.0
+                    return max(0.0, min(100.0, usage))
         except (ValueError, IndexError, ZeroDivisionError) as e:
-            logger.warning(f"Failed to parse Windows memory usage: {e}")
+            logger.warning(f"Failed to parse Windows memory usage: {e}. Output: {repr(output)}")
         return 0.0
     
     def _parse_linux_memory(self, output: str) -> float:

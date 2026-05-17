@@ -13,27 +13,27 @@ const api = axios.create({
 
 export const apiService = {
   async getLatestMetrics(): Promise<SystemMetrics> {
-    const response = await api.get<SystemMetrics>('/metrics/latest');
+    const response = await api.get<SystemMetrics>('/api/metrics/latest');
     return response.data;
   },
 
   async getAlerts(params?: { severity?: string; limit?: number }): Promise<Alert[]> {
-    const response = await api.get<Alert[]>('/alerts', { params });
+    const response = await api.get<Alert[]>('/api/alerts', { params });
     return response.data;
   },
 
   async getAttackGraph(): Promise<AttackGraph> {
-    const response = await api.get<AttackGraph>('/graph');
+    const response = await api.get<AttackGraph>('/api/graph');
     return response.data;
   },
 
   async getSuspiciousIPs(): Promise<SuspiciousIP[]> {
-    const response = await api.get<SuspiciousIP[]>('/suspicious-ips');
+    const response = await api.get<SuspiciousIP[]>('/api/suspicious-ips');
     return response.data;
   },
 
   async getHistory(params?: { limit?: number }): Promise<LogEntry[]> {
-    const response = await api.get<LogEntry[]>('/history', { params });
+    const response = await api.get<LogEntry[]>('/api/history', { params });
     return response.data;
   },
 };
