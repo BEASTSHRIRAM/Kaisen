@@ -16,10 +16,14 @@ Requirements validated:
 """
 
 import sys
+import os
 import signal
 import argparse
 import logging
 from pathlib import Path
+
+# Add parent directory to path to allow imports from src
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.collection_config import CollectionConfig
 from src.log_collector import LogCollector

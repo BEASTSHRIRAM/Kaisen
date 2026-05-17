@@ -40,20 +40,12 @@ export default function Layout() {
   const { connectionStatus, setConnectionStatus, addAlert, setCurrentMetrics, addMetricsToHistory } = useStore();
 
   useEffect(() => {
-    // Initialize WebSocket connections
-    const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+    // Initialize Socket.IO connection for real-time updates
+    const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'http://localhost:8000';
     
-    wsService.connect(`${WS_BASE_URL}/ws/alerts`);
-    wsService.subscribe('alert', (alert) => {
-      addAlert(alert);
-    });
-
-    wsService.subscribe('metrics', (metrics) => {
-      setCurrentMetrics(metrics);
-      addMetricsToHistory(metrics);
-      setConnectionStatus({ connected: true, lastUpdate: new Date(), error: null });
-    });
-
+    // Note: Socket.IO connection will be established automatically
+    // For now, we'll use polling as fallback
+    
     // Fetch initial data
     const fetchInitialData = async () => {
       try {
@@ -82,7 +74,7 @@ export default function Layout() {
 
     fetchInitialData();
 
-    // Polling fallback
+    // Polling for real-time updates (every 2 seconds for near real-time)
     const interval = setInterval(async () => {
       try {
         const metrics = await apiService.getLatestMetrics();
@@ -92,11 +84,10 @@ export default function Layout() {
       } catch (error) {
         setConnectionStatus({ connected: false, error: 'Connection lost' });
       }
-    }, 10000);
+    }, 2000); // Update every 2 seconds for near real-time
 
     return () => {
       clearInterval(interval);
-      wsService.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

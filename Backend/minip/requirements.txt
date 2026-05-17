@@ -23,3 +23,9 @@ hypothesis>=6.50.0
 # Jupyter (optional, for notebooks)
 jupyter>=1.0.0
 ipykernel>=6.0.0
+
+# API Server
+flask>=2.3.0
+flask-cors>=4.0.0
+flask-socketio>=5.3.0
+python-socketio>=5.9.0
