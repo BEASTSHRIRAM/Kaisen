@@ -4,6 +4,9 @@ Model Interface for Anomaly Detection.
 This module provides the interface to load and interact with the pre-trained
 TensorFlow anomaly detection model. It handles model loading, input preprocessing,
 and prediction execution with comprehensive error handling.
+
+If the model file is absent, a RuleBasedAnomalyScorer is activated as a
+stand-in so the full collection → alert → API pipeline remains functional.
 """
 
 import os
@@ -26,139 +29,226 @@ from src.data_models import FeatureVector, PredictionResult
 from src.error_handler import handle_critical_error, handle_recoverable_error, log_error, ErrorCategory
 
 
+# ---------------------------------------------------------------------------
+# Rule-Based Fallback Anomaly Scorer
+# ---------------------------------------------------------------------------
+
+class RuleBasedAnomalyScorer:
+    """
+    Threshold-based anomaly scorer used when the TensorFlow model is unavailable.
+
+    Computes a weighted anomaly score in [0, 1] from five FeatureVector fields:
+      - cpu_usage          (weight 0.25) — threshold at 85 % (critical: 95 %)
+      - failed_logins      (weight 0.30) — threshold at 10  (critical: 30)
+      - network_connections(weight 0.20) — threshold at 200 (critical: 500)
+      - process_count      (weight 0.15) — threshold at 400 (critical: 600)
+      - unique_ip_count    (weight 0.10) — threshold at 20  (critical: 50)
+
+    Each dimension maps to a sub-score via a two-tier step function:
+      value < high_threshold  → sub-score ∝ (value / high_threshold) * 0.4
+      value < crit_threshold  → sub-score ∈ [0.4, 0.8) linearly
+      value >= crit_threshold → sub-score ∈ [0.8, 1.0) capped
+
+    The combined weighted score is then compared against a 0.5 decision
+    boundary, consistent with ModelInterface label assignment.
+
+    Research note: This scorer deliberately mirrors NIST SP 800-53 SA-9
+    anomaly indicators and serves as the "rule-based baseline" reference
+    point in the sim-to-real evaluation.
+    """
+
+    THRESHOLDS = {
+        "cpu_usage":           {"high": 85.0,  "crit": 95.0},
+        "failed_logins":       {"high": 10.0,  "crit": 30.0},
+        "network_connections": {"high": 200.0, "crit": 500.0},
+        "process_count":       {"high": 400.0, "crit": 600.0},
+        "unique_ip_count":     {"high": 20.0,  "crit": 50.0},
+    }
+
+    WEIGHTS = {
+        "cpu_usage":           0.25,
+        "failed_logins":       0.30,
+        "network_connections": 0.20,
+        "process_count":       0.15,
+        "unique_ip_count":     0.10,
+    }
+
+    def _score_dimension(self, value: float, high: float, crit: float) -> float:
+        """Map a single metric value to a sub-score in [0, 1]."""
+        if value < 0:
+            value = 0.0
+        if value >= crit:
+            # Critical zone: score ∈ [0.8, 1.0) — cap avoids exactly 1.0
+            excess = min((value - crit) / max(crit, 1.0), 1.0)
+            return 0.8 + 0.19 * excess
+        elif value >= high:
+            # High zone: score ∈ [0.4, 0.8)
+            fraction = (value - high) / max(crit - high, 1.0)
+            return 0.4 + 0.4 * fraction
+        else:
+            # Normal zone: score ∈ [0.0, 0.4)
+            fraction = value / max(high, 1.0)
+            return 0.4 * fraction
+
+    def predict(self, feature_vector: FeatureVector) -> PredictionResult:
+        """
+        Compute a weighted anomaly score from threshold rules.
+
+        Args:
+            feature_vector: Collected system metrics
+
+        Returns:
+            PredictionResult consistent with ModelInterface output contract
+        """
+        metrics = {
+            "cpu_usage":           feature_vector.cpu_usage,
+            "failed_logins":       float(feature_vector.failed_logins),
+            "network_connections": float(feature_vector.network_connections),
+            "process_count":       float(feature_vector.process_count),
+            "unique_ip_count":     float(feature_vector.unique_ip_count),
+        }
+
+        weighted_score = 0.0
+        feature_importance: dict = {}
+
+        for key, value in metrics.items():
+            t = self.THRESHOLDS[key]
+            sub = self._score_dimension(value, t["high"], t["crit"])
+            contribution = self.WEIGHTS[key] * sub
+            weighted_score += contribution
+            feature_importance[key] = round(contribution, 4)
+
+        # Clamp to [0, 1]
+        anomaly_score = max(0.0, min(1.0, weighted_score))
+        label = "anomaly" if anomaly_score >= 0.5 else "normal"
+        confidence = abs(anomaly_score - 0.5) * 2.0  # scale to [0, 1]
+
+        logging.debug(
+            f"[RuleBasedScorer] score={anomaly_score:.3f} label={label} "
+            f"contributions={feature_importance}"
+        )
+
+        return PredictionResult(
+            anomaly_score=anomaly_score,
+            label=label,
+            confidence=confidence,
+            feature_importance=feature_importance,
+        )
+
+
+# ---------------------------------------------------------------------------
+# TF Model Interface (with rule-based fallback)
+# ---------------------------------------------------------------------------
+
 class ModelInterface:
     """
     Interface for loading and running predictions with the anomaly detection model.
-    
-    This class encapsulates all model-related operations including loading the
-    TensorFlow model from disk, preprocessing feature vectors into model input
-    format, and executing predictions with proper error handling.
-    
+
+    If the model file is absent or TensorFlow is unavailable, automatically
+    falls back to RuleBasedAnomalyScorer so the collection pipeline can
+    start without a trained model.  A clear WARNING is emitted so the
+    operator knows which scorer is active.
+
     Attributes:
         model_path: Path to the TensorFlow model file (.h5)
         model: Loaded TensorFlow/Keras model (None if not loaded)
         input_shape: Expected input shape of the model
+        _fallback: RuleBasedAnomalyScorer instance (active when model absent)
     """
-    
+
     def __init__(self, model_path: str):
         """
-        Initialize ModelInterface and load the model from the specified path.
-        
+        Initialize ModelInterface.  Falls back gracefully if model is missing.
+
         Args:
             model_path: Path to the TensorFlow model file (.h5)
-            
-        Raises:
-            FileNotFoundError: If the model file does not exist
-            ImportError: If TensorFlow is not installed
-            Exception: If model loading fails for any other reason
-        
-        Requirements:
-            - 6.2: Use default model path if not configured
-            - 6.3: Log error and terminate if model file does not exist
-            - 10.3: Terminate gracefully for critical errors
         """
         self.model_path = model_path
-        self.model: Optional[tf.keras.Model] = None
+        self.model: Optional[object] = None  # tf.keras.Model when loaded
         self.input_shape = None
-        
-        # Check if TensorFlow is available - CRITICAL ERROR
+        self._fallback: Optional[RuleBasedAnomalyScorer] = None
+
+        # ------------------------------------------------------------------ #
+        # Attempt to load TF model; activate fallback on any failure          #
+        # ------------------------------------------------------------------ #
         if tf is None:
-            log_error(
-                ErrorCategory.CRITICAL,
-                "ModelInterface",
-                "TensorFlow is not installed. Please install it with: pip install tensorflow"
+            logging.warning(
+                "[ModelInterface] TensorFlow is not installed. "
+                "Activating RuleBasedAnomalyScorer as fallback. "
+                "Install tensorflow to use the trained model."
             )
-            raise ImportError("TensorFlow is not installed. Please install it with: pip install tensorflow")
-        
-        # Check if model file exists - CRITICAL ERROR
+            self._fallback = RuleBasedAnomalyScorer()
+            return
+
         if not os.path.exists(model_path):
-            log_error(
-                ErrorCategory.CRITICAL,
-                "ModelInterface",
-                f"Model file not found: {model_path}"
+            logging.warning(
+                f"[ModelInterface] Model file not found: {model_path}. "
+                "Activating RuleBasedAnomalyScorer as fallback. "
+                "Train a model with: python src/train.py"
             )
-            raise FileNotFoundError(f"Model file not found: {model_path}")
-        
-        # Load the model - CRITICAL ERROR if fails
+            self._fallback = RuleBasedAnomalyScorer()
+            return
+
         try:
             logging.info(f"Loading model from: {model_path}")
-            
-            # Try loading as a complete Keras model first
+
             try:
                 self.model = tf.keras.models.load_model(model_path)
                 self.input_shape = self.model.input_shape
                 logging.info(f"Model loaded successfully. Input shape: {self.input_shape}")
             except (ValueError, OSError) as e:
-                # If that fails, the model might be weights-only or a DQN model
-                # Create a simple feedforward network architecture for anomaly detection
                 logging.warning(
                     f"Could not load as complete model: {e}. "
                     "Creating network architecture and loading weights..."
                 )
-                
                 try:
-                    # Create a simple network architecture (4 inputs -> hidden layers -> 1 output)
-                    # This matches the expected input: [failed_logins, process_count, cpu_usage, network_connections]
-                    
-                    # Try to inspect the saved model to get the correct architecture
                     import h5py
-                    with h5py.File(model_path, 'r') as f:
-                        # Check if this is a DQN model (has multiple layers)
-                        if 'model_weights' in f.keys():
-                            # This is a full model save
-                            layer_names = list(f['model_weights'].keys())
-                            num_layers = len(layer_names)
-                            logging.info(f"Detected {num_layers} layers in saved model")
+                    with h5py.File(model_path, "r") as f:
+                        if "model_weights" in f.keys():
+                            layer_names = list(f["model_weights"].keys())
                         else:
-                            # This is weights-only
                             layer_names = list(f.keys())
-                            num_layers = len(layer_names)
-                            logging.info(f"Detected {num_layers} weight groups in saved model")
-                    
-                    # Create architecture matching the saved weights
-                    # For DQN models, we need to match the exact architecture
+                        logging.info(f"Detected {len(layer_names)} weight groups in saved model")
+
                     self.model = tf.keras.Sequential([
-                        tf.keras.layers.Dense(128, activation='relu', input_shape=(4,)),
-                        tf.keras.layers.Dense(128, activation='relu'),
-                        tf.keras.layers.Dense(64, activation='relu'),
-                        tf.keras.layers.Dense(32, activation='relu'),
-                        tf.keras.layers.Dense(16, activation='relu'),
-                        tf.keras.layers.Dense(1, activation='sigmoid')  # Output: anomaly score [0, 1]
+                        tf.keras.layers.Dense(128, activation="relu", input_shape=(4,)),
+                        tf.keras.layers.Dense(128, activation="relu"),
+                        tf.keras.layers.Dense(64, activation="relu"),
+                        tf.keras.layers.Dense(32, activation="relu"),
+                        tf.keras.layers.Dense(16, activation="relu"),
+                        tf.keras.layers.Dense(1, activation="sigmoid"),
                     ])
-                    
-                    # Try to load weights
                     try:
                         self.model.load_weights(model_path)
                         self.input_shape = self.model.input_shape
-                        logging.info(f"Weights loaded successfully. Input shape: {self.input_shape}")
-                    except Exception as weight_error:
-                        # If weights don't match, create a simple untrained model for testing
+                        logging.info(f"Weights loaded. Input shape: {self.input_shape}")
+                    except Exception as weight_err:
                         logging.warning(
-                            f"Could not load weights (architecture mismatch): {weight_error}. "
-                            "Using untrained model for testing purposes."
+                            f"Architecture mismatch loading weights: {weight_err}. "
+                            "Using untrained model for testing."
                         )
-                        # Keep the model but don't load weights
                         self.input_shape = self.model.input_shape
-                        logging.info("Created untrained model for testing")
-                        
-                except Exception as arch_error:
-                    # CRITICAL ERROR: Cannot create model architecture
-                    handle_critical_error(
-                        "ModelInterface",
-                        f"Failed to create model architecture: {arch_error}",
-                        arch_error
+
+                except Exception as arch_err:
+                    logging.warning(
+                        f"Failed to reconstruct model architecture: {arch_err}. "
+                        "Activating RuleBasedAnomalyScorer as fallback."
                     )
-                    raise
-                    
+                    self.model = None
+                    self._fallback = RuleBasedAnomalyScorer()
+
         except Exception as e:
-            # CRITICAL ERROR: Model loading failed
-            handle_critical_error(
-                "ModelInterface",
-                f"Failed to load model from {model_path}: {str(e)}",
-                e
+            logging.warning(
+                f"[ModelInterface] Failed to load model ({e}). "
+                "Activating RuleBasedAnomalyScorer as fallback."
             )
-            raise
-    
+            self.model = None
+            self._fallback = RuleBasedAnomalyScorer()
+
+    # ---------------------------------------------------------------------- #
+    # Public interface                                                         #
+    # ---------------------------------------------------------------------- #
+
     def is_loaded(self) -> bool:
         """
         Check if the model is loaded successfully.

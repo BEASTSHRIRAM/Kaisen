@@ -22,202 +22,265 @@ from src.error_handler import handle_warning, handle_recoverable_error, log_erro
 class StorageManager:
     """
     Manages persistence of logs and alerts to local JSON files.
-    
+
     This class provides methods to save log entries and alerts with:
     - Automatic file creation if files don't exist
     - Retry logic with exponential backoff for failed writes
     - JSON validation after each write operation
     - Append-only writes to preserve existing data
-    
+    - **Bounded rotation**: when the entry count exceeds max_history_entries
+      or max_alerts_entries the oldest entries are dropped and the previous
+      file is renamed to `<name>.bak` before writing, preventing unbounded
+      disk growth during long collection runs.
+
     Attributes:
-        log_dir: Directory path for storing log files
-        history_file: Filename for log history
-        alerts_file: Filename for alerts
+        log_dir:             Directory path for storing log files
+        history_file:        Filename for log history
+        alerts_file:         Filename for alerts
+        max_history_entries: Maximum number of entries kept in history.json
+        max_alerts_entries:  Maximum number of entries kept in alerts.json
     """
-    
-    def __init__(self, log_dir: str = "logs", history_file: str = "history.json", 
-                 alerts_file: str = "alerts.json"):
+
+    def __init__(
+        self,
+        log_dir: str = "logs",
+        history_file: str = "history.json",
+        alerts_file: str = "alerts.json",
+        max_history_entries: int = 10_000,
+        max_alerts_entries: int = 5_000,
+    ):
         """
-        Initialize StorageManager with file paths.
-        
+        Initialize StorageManager with file paths and rotation limits.
+
         Args:
-            log_dir: Directory for log files (default: "logs")
-            history_file: Filename for log history (default: "history.json")
-            alerts_file: Filename for alerts (default: "alerts.json")
-        
+            log_dir:             Directory for log files (default: "logs")
+            history_file:        Filename for log history (default: "history.json")
+            alerts_file:         Filename for alerts (default: "alerts.json")
+            max_history_entries: Maximum entries in history.json before rotation
+                                 (default: 10 000).  Set to 0 to disable.
+            max_alerts_entries:  Maximum entries in alerts.json before rotation
+                                 (default: 5 000).  Set to 0 to disable.
+
         Requirements:
             - 10.2: Continue operation after non-critical errors
         """
         self.log_dir = Path(log_dir)
         self.history_file = history_file
         self.alerts_file = alerts_file
-        
+        self.max_history_entries = max_history_entries
+        self.max_alerts_entries = max_alerts_entries
+
         # Ensure log directory exists
         try:
             self.log_dir.mkdir(parents=True, exist_ok=True)
             logging.info(f"StorageManager initialized: log_dir={self.log_dir}")
         except Exception as e:
-            # RECOVERABLE ERROR: Failed to create log directory
             handle_recoverable_error(
                 "StorageManager",
                 f"Failed to create log directory {self.log_dir}: {str(e)}",
-                e
+                e,
             )
-            # Try to continue anyway
+
+    # ---------------------------------------------------------------------- #
+    # Internal helpers                                                         #
+    # ---------------------------------------------------------------------- #
+
+    def _rotate_if_needed(
+        self,
+        data: List[Dict[str, Any]],
+        max_entries: int,
+        filepath: Path,
+    ) -> List[Dict[str, Any]]:
+        """
+        Enforce the entry-count limit on a JSON list.
+
+        If len(data) > max_entries:
+          1. Rename the existing file to '<filepath>.bak' (overwrites previous bak).
+          2. Slice data to keep the *newest* max_entries entries.
+
+        Args:
+            data:        Full list of entries (already includes the new one).
+            max_entries: Maximum number of entries to retain (0 = unlimited).
+            filepath:    Path to the JSON file (used for .bak naming).
+
+        Returns:
+            The (possibly truncated) data list.
+        """
+        if max_entries <= 0 or len(data) <= max_entries:
+            return data
+
+        # Rotate: rename current file to .bak
+        bak_path = filepath.with_suffix(".json.bak")
+        try:
+            if filepath.exists():
+                filepath.rename(bak_path)
+                logging.info(
+                    f"[StorageManager] Rotation triggered for {filepath.name}: "
+                    f"{len(data)} entries > limit {max_entries}. "
+                    f"Previous file backed up to {bak_path.name}."
+                )
+        except Exception as e:
+            handle_warning(
+                "StorageManager",
+                f"Could not rename {filepath} to {bak_path} during rotation: {e}",
+            )
+
+        # Keep the newest max_entries entries
+        return data[-max_entries:]
     
     def save_log(self, feature_vector: FeatureVector, max_retries: int = 3) -> bool:
         """
-        Save a log entry to history.json with retry logic.
-        
-        This method appends the feature vector to the history file without
-        overwriting existing entries. If the file doesn't exist, it creates it.
+        Save a log entry to history.json with retry logic and rotation.
+
+        Appends the feature vector to the history file.  If the file doesn't
+        exist, it creates it.  After appending, if the entry count exceeds
+        max_history_entries the oldest entries are dropped (with .bak backup).
         Failed writes are retried up to max_retries times with exponential backoff.
-        
+
         Args:
             feature_vector: The FeatureVector to save
-            max_retries: Maximum number of retry attempts (default: 3)
-            
+            max_retries:    Maximum number of retry attempts (default: 3)
+
         Returns:
             True if save succeeded, False if all retries failed
-            
+
         Validates: Requirements 8.1, 8.3, 8.4, 8.5, 8.6, 8.7
         """
         filepath = self.log_dir / self.history_file
-        
+
         try:
             log_entry = feature_vector.to_dict()
         except Exception as e:
             handle_recoverable_error(
                 "StorageManager",
                 f"Failed to convert feature vector to dict: {str(e)}",
-                e
+                e,
             )
             return False
-        
+
         for attempt in range(max_retries):
             try:
                 # Read existing data or initialize empty list
                 if filepath.exists():
                     try:
-                        with open(filepath, 'r') as f:
+                        with open(filepath, "r") as f:
                             data = json.load(f)
                         if not isinstance(data, list):
                             handle_warning(
                                 "StorageManager",
-                                f"Invalid data format in {filepath}, expected list. Reinitializing."
+                                f"Invalid data format in {filepath}, expected list. Reinitializing.",
                             )
                             data = []
                     except json.JSONDecodeError as e:
                         handle_warning(
                             "StorageManager",
-                            f"Corrupted JSON in {filepath}: {str(e)}. Reinitializing."
+                            f"Corrupted JSON in {filepath}: {str(e)}. Reinitializing.",
                         )
                         data = []
                 else:
                     data = []
-                
-                # Append new entry
+
+                # Append new entry then enforce size limit
                 data.append(log_entry)
-                
-                # Write back to file
+                data = self._rotate_if_needed(data, self.max_history_entries, filepath)
+
+                # Write back
                 try:
                     self._write_to_file(data, filepath)
                 except Exception as e:
                     raise IOError(f"Failed to write to file: {str(e)}")
-                
+
                 # Validate JSON integrity
                 if not self.ensure_valid_json(filepath):
                     raise ValueError(f"JSON validation failed for {filepath}")
-                
-                logging.debug(f"Log entry saved to {filepath}")
+
+                logging.debug(f"Log entry saved to {filepath} ({len(data)} entries)")
                 return True
-                
+
             except Exception as e:
                 if attempt == max_retries - 1:
-                    # RECOVERABLE ERROR: All retries failed
                     handle_recoverable_error(
                         "StorageManager",
                         f"Failed to save log after {max_retries} attempts: {str(e)}",
-                        e
+                        e,
                     )
                     return False
-                
-                # Exponential backoff: 0.1s, 0.2s, 0.4s
+
                 backoff_time = 0.1 * (2 ** attempt)
                 handle_warning(
                     "StorageManager",
-                    f"Save log attempt {attempt + 1} failed: {str(e)}, retrying in {backoff_time}s"
+                    f"Save log attempt {attempt + 1} failed: {str(e)}, retrying in {backoff_time}s",
                 )
                 time.sleep(backoff_time)
-        
+
         return False
     
     def save_alert(self, alert: Alert, max_retries: int = 3) -> bool:
         """
-        Save an alert to alerts.json with retry logic.
-        
-        This method appends the alert to the alerts file without overwriting
-        existing entries. If the file doesn't exist, it creates it.
-        Failed writes are retried up to max_retries times with exponential backoff.
-        
+        Save an alert to alerts.json with retry logic and rotation.
+
+        Appends the alert to the alerts file.  If the entry count exceeds
+        max_alerts_entries the oldest entries are dropped (with .bak backup).
+
         Args:
-            alert: The Alert to save
+            alert:       The Alert to save
             max_retries: Maximum number of retry attempts (default: 3)
-            
+
         Returns:
             True if save succeeded, False if all retries failed
-            
+
         Validates: Requirements 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 14.11
         """
         filepath = self.log_dir / self.alerts_file
-        
-        # Convert alert to dictionary, handling nested FeatureVector
+
         alert_dict = {
-            'alert_id': alert.alert_id,
-            'node_id': alert.node_id,
-            'timestamp': alert.timestamp,
-            'anomaly_score': alert.anomaly_score,
-            'suspected_reason': alert.suspected_reason,
-            'severity': alert.severity,
-            'suspicious_ips': alert.suspicious_ips,
-            'feature_vector': alert.feature_vector.to_dict()
+            "alert_id":        alert.alert_id,
+            "node_id":         alert.node_id,
+            "timestamp":       alert.timestamp,
+            "anomaly_score":   alert.anomaly_score,
+            "suspected_reason": alert.suspected_reason,
+            "severity":        alert.severity,
+            "suspicious_ips":  alert.suspicious_ips,
+            "feature_vector":  alert.feature_vector.to_dict(),
         }
-        
+
         for attempt in range(max_retries):
             try:
-                # Read existing data or initialize empty list
                 if filepath.exists():
-                    with open(filepath, 'r') as f:
+                    with open(filepath, "r") as f:
                         data = json.load(f)
                     if not isinstance(data, list):
                         logging.error(f"Invalid data format in {filepath}, expected list")
                         data = []
                 else:
                     data = []
-                
-                # Append new alert
+
+                # Append then enforce size limit
                 data.append(alert_dict)
-                
-                # Write back to file
+                data = self._rotate_if_needed(data, self.max_alerts_entries, filepath)
+
                 self._write_to_file(data, filepath)
-                
-                # Validate JSON integrity
+
                 if not self.ensure_valid_json(filepath):
                     raise ValueError(f"JSON validation failed for {filepath}")
-                
-                logging.info(f"Alert saved to {filepath}: alert_id={alert.alert_id}, severity={alert.severity}")
+
+                logging.info(
+                    f"Alert saved to {filepath}: alert_id={alert.alert_id}, "
+                    f"severity={alert.severity} ({len(data)} entries)"
+                )
                 return True
-                
+
             except Exception as e:
                 if attempt == max_retries - 1:
                     logging.error(f"Failed to save alert after {max_retries} attempts: {e}")
                     return False
-                
-                # Exponential backoff: 0.1s, 0.2s, 0.4s
+
                 backoff_time = 0.1 * (2 ** attempt)
-                logging.warning(f"Save alert attempt {attempt + 1} failed: {e}, retrying in {backoff_time}s")
+                logging.warning(
+                    f"Save alert attempt {attempt + 1} failed: {e}, retrying in {backoff_time}s"
+                )
                 time.sleep(backoff_time)
-        
+
         return False
     
     def ensure_valid_json(self, filepath: Path) -> bool:
