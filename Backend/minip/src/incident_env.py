@@ -42,33 +42,38 @@ class EpisodeStats:
 class IncidentResponseEnv(gym.Env):
     """
     Custom Gym environment for automated incident response.
-    
-    Enhanced Observation Space (10 dimensions):
-        - login_rate: Number of login attempts in time window [0, 200]
-        - file_access_rate: Number of file accesses in time window [0, 500]
-        - cpu_usage: CPU usage percentage [0, 100]
-        - login_rate_delta: Rate of change in login attempts [-100, 100]
-        - file_rate_delta: Rate of change in file access [-200, 200]
-        - cpu_delta: Rate of change in CPU usage [-50, 50]
-        - login_moving_avg: Moving average of login rate (smoothed) [0, 200]
-        - file_moving_avg: Moving average of file rate (smoothed) [0, 500]
-        - sustained_high_activity: Binary indicator of sustained anomaly [0, 1]
-        - normalized_time: Progress through episode [0, 1]
-    
+
+    Enhanced Observation Space (13 dimensions):
+        --- Original 10D ---
+        [0]  login_rate:          Login attempts in time window [0, 200]
+        [1]  file_access_rate:    File accesses in time window [0, 500]
+        [2]  cpu_usage:           CPU usage percentage [0, 100]
+        [3]  login_rate_delta:    Rate of change in login attempts [-100, 100]
+        [4]  file_rate_delta:     Rate of change in file access [-200, 200]
+        [5]  cpu_delta:           Rate of change in CPU usage [-50, 50]
+        [6]  login_moving_avg:    Moving average of login rate [0, 200]
+        [7]  file_moving_avg:     Moving average of file rate [0, 500]
+        [8]  sustained_indicator: Binary indicator of sustained anomaly [0, 1]
+        [9]  normalized_time:     Progress through episode [0, 1]
+        --- New lateral-movement / exfiltration features (Improvement 2) ---
+        [10] outbound_connections: Outbound TCP connection count (MITRE T1041) [0, 1000]
+        [11] unique_dst_ports:     Distinct destination ports (MITRE T1071) [0, 500]
+        [12] rare_port_indicator:  Fraction of connections on non-standard ports [0, 1]
+
     Action Space:
-        0: do_nothing - Take no action
-        1: block_ip - Block the source IP address
-        2: lock_account - Lock the targeted user account
-        3: terminate_process - Kill suspicious processes
-        4: isolate_host - Isolate the affected host from network
-    
+        0: do_nothing         - Take no action
+        1: block_ip           - Block the source IP address
+        2: lock_account       - Lock the targeted user account
+        3: terminate_process  - Kill suspicious processes
+        4: isolate_host       - Isolate the affected host from network
+
     Rewards:
         - Early containment: +50
-        - Late containment: +20
+        - Late containment:  +20
         - Correct no-action: +1
-        - False positive: -10
-        - Data loss: -30
-        - Step penalty: -0.1 (encourages efficiency)
+        - False positive:    -10
+        - Data loss:         -30
+        - Step penalty:      -0.1
     """
     
     metadata = {"render_modes": ["human", "ansi"]}
@@ -108,13 +113,23 @@ class IncidentResponseEnv(gym.Env):
         
         # Define observation space based on feature mode
         if use_enhanced_features:
-            # Enhanced 10-dimensional observation space
+            # Enhanced 13-dimensional observation space (10 original + 3 lateral-movement)
             self.observation_space = spaces.Box(
-                low=np.array([0.0, 0.0, 0.0, -100.0, -200.0, -50.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32),
-                high=np.array([200.0, 500.0, 100.0, 100.0, 200.0, 50.0, 200.0, 500.0, 1.0, 1.0], dtype=np.float32),
+                low=np.array([
+                    0.0, 0.0, 0.0,          # login, file, cpu
+                    -100.0, -200.0, -50.0,  # deltas
+                    0.0, 0.0, 0.0, 0.0,    # moving avgs, sustained, time
+                    0.0, 0.0, 0.0,          # outbound_conn, dst_ports, rare_port
+                ], dtype=np.float32),
+                high=np.array([
+                    200.0, 500.0, 100.0,    # login, file, cpu
+                    100.0, 200.0, 50.0,     # deltas
+                    200.0, 500.0, 1.0, 1.0, # moving avgs, sustained, time
+                    1000.0, 500.0, 1.0,     # outbound_conn, dst_ports, rare_port
+                ], dtype=np.float32),
                 dtype=np.float32
             )
-            self.obs_dim = 10
+            self.obs_dim = 13
         else:
             # Original 4-dimensional observation space
             self.observation_space = spaces.Box(
@@ -156,6 +171,9 @@ class IncidentResponseEnv(gym.Env):
         self.login_history = deque(maxlen=moving_avg_window)
         self.file_history = deque(maxlen=moving_avg_window)
         self.cpu_history = deque(maxlen=moving_avg_window)
+        # Lateral-movement history buffers (Improvement 2)
+        self.outbound_history = deque(maxlen=moving_avg_window)
+        self.port_history = deque(maxlen=moving_avg_window)
         
         # Previous values for delta calculation
         self.prev_login = 0.0
@@ -196,6 +214,8 @@ class IncidentResponseEnv(gym.Env):
         self.login_history.clear()
         self.file_history.clear()
         self.cpu_history.clear()
+        self.outbound_history.clear()
+        self.port_history.clear()
         
         # Reset previous values
         self.prev_login = 0.0
@@ -207,11 +227,13 @@ class IncidentResponseEnv(gym.Env):
         
         # Get initial observation
         self.last_observation = self.simulator.step(None)
-        
+
         # Initialize history with initial values
         self.login_history.append(self.last_observation.login_attempts)
         self.file_history.append(self.last_observation.file_access_rate)
         self.cpu_history.append(self.last_observation.cpu_usage)
+        self.outbound_history.append(self.last_observation.outbound_connections)
+        self.port_history.append(self.last_observation.unique_dst_ports)
         
         obs = self._get_observation()
         info = self._get_info()
@@ -247,6 +269,8 @@ class IncidentResponseEnv(gym.Env):
         self.login_history.append(self.last_observation.login_attempts)
         self.file_history.append(self.last_observation.file_access_rate)
         self.cpu_history.append(self.last_observation.cpu_usage)
+        self.outbound_history.append(self.last_observation.outbound_connections)
+        self.port_history.append(self.last_observation.unique_dst_ports)
         
         # Update sustained high activity counter
         self._update_high_activity_counter()
@@ -304,64 +328,77 @@ class IncidentResponseEnv(gym.Env):
     
     def _get_observation(self) -> np.ndarray:
         """
-        Get current observation with noise.
-        
+        Get current 13D observation with noise.
+
         Returns:
-            Noisy observation array
+            Noisy observation array of shape (obs_dim,)
         """
         if self.last_observation is None:
             return np.zeros(self.obs_dim, dtype=np.float32)
-        
-        current_login = self.last_observation.login_attempts
-        current_file = self.last_observation.file_access_rate
-        current_cpu = self.last_observation.cpu_usage
-        
+
+        current_login  = self.last_observation.login_attempts
+        current_file   = self.last_observation.file_access_rate
+        current_cpu    = self.last_observation.cpu_usage
+        current_out    = self.last_observation.outbound_connections
+        current_ports  = self.last_observation.unique_dst_ports
+
         if self.use_enhanced_features:
-            # Calculate rate of change (delta)
+            # Original 10D features -------------------------------------------
             login_delta = current_login - self.prev_login
-            file_delta = current_file - self.prev_file
-            cpu_delta = current_cpu - self.prev_cpu
-            
-            # Calculate moving averages
+            file_delta  = current_file  - self.prev_file
+            cpu_delta   = current_cpu   - self.prev_cpu
+
             login_ma = np.mean(list(self.login_history)) if self.login_history else current_login
-            file_ma = np.mean(list(self.file_history)) if self.file_history else current_file
-            
-            # Sustained high activity indicator (normalized)
-            sustained_indicator = self.high_activity_counter / self.high_activity_threshold
-            sustained_indicator = min(sustained_indicator, 1.0)
-            
+            file_ma  = np.mean(list(self.file_history))  if self.file_history  else current_file
+
+            sustained_indicator = min(
+                self.high_activity_counter / self.high_activity_threshold, 1.0
+            )
+
+            # Lateral-movement features (dims 10-12) --------------------------
+            # [10] outbound_connections — raw count with noise
+            # [11] unique_dst_ports    — raw count with noise
+            # [12] rare_port_indicator — fraction of ports outside {80,443,22,25,53}
+            #      Approximated as: ports above a "standard" baseline of ~5
+            #      normalised to [0,1] by dividing by (unique_dst_ports + 1)
+            std_port_count = 5.0   # expected distinct ports in clean traffic
+            rare_port_indicator = float(
+                np.clip(
+                    (current_ports - std_port_count) / max(current_ports, 1.0),
+                    0.0, 1.0,
+                )
+            )
+
             obs = np.array([
-                current_login,           # Raw login rate
-                current_file,            # Raw file access rate
-                current_cpu,             # Raw CPU usage
-                login_delta,             # Rate of change in login
-                file_delta,              # Rate of change in file access
-                cpu_delta,               # Rate of change in CPU
-                login_ma,                # Moving average of login
-                file_ma,                 # Moving average of file access
-                sustained_indicator,     # Sustained anomaly indicator
-                self.current_step / self.max_steps  # Normalized time
+                current_login, current_file, current_cpu,    # 0-2  raw
+                login_delta,   file_delta,   cpu_delta,      # 3-5  deltas
+                login_ma,      file_ma,                      # 6-7  moving avg
+                sustained_indicator,                          # 8    sustained
+                self.current_step / self.max_steps,          # 9    time
+                current_out,                                  # 10   outbound
+                current_ports,                                # 11   dst ports
+                rare_port_indicator,                          # 12   rare ports
             ], dtype=np.float32)
-            
-            # Add observation noise (except to time and sustained indicator)
-            noise = np.random.normal(0, self.obs_noise_std, 8)
-            obs[:8] += noise
+
+            # Add observation noise to all raw signals (dims 0-7, 10-11)
+            noise_dims = [0, 1, 2, 3, 4, 5, 6, 7, 10, 11]
+            noise = np.random.normal(0, self.obs_noise_std, len(noise_dims))
+            for i, d in enumerate(noise_dims):
+                obs[d] += noise[i]
         else:
-            # Original 4D observation
+            # Original 4D observation (no enhanced features)
             obs = np.array([
                 current_login,
                 current_file,
                 current_cpu,
                 self.current_step / self.max_steps
             ], dtype=np.float32)
-            
-            # Add observation noise (except to time)
+
             noise = np.random.normal(0, self.obs_noise_std, 3)
             obs[:3] += noise
-        
+
         # Clip to valid ranges
         obs = np.clip(obs, self.observation_space.low, self.observation_space.high)
-        
         return obs
     
     def _calculate_reward(

@@ -39,6 +39,9 @@ class AttackObservation:
     flow_duration: float       # Average flow duration
     is_attack_active: bool     # Ground truth (hidden from agent)
     attack_stage: int          # Current attack stage (hidden from agent)
+    # --- Lateral movement / exfiltration signals (Improvement 2) ---
+    outbound_connections: float  # Outbound TCP connection count (MITRE T1041)
+    unique_dst_ports: float      # Count of distinct destination ports (MITRE T1071)
 
 
 class BruteForceAttack:
@@ -369,12 +372,13 @@ class CombinedAttackSimulator:
     def step(self, defender_action: Optional[int] = None) -> AttackObservation:
         """
         Advance simulation by one time step.
-        
+
         Args:
             defender_action: Action taken by defender
-            
+
         Returns:
-            AttackObservation with all observable metrics
+            AttackObservation with all observable metrics, including the new
+            lateral-movement signals outbound_connections and unique_dst_ports.
         """
         # Get metrics from both attack types
         if self.active_attack in ["bruteforce", "both"]:
@@ -382,33 +386,65 @@ class CombinedAttackSimulator:
         else:
             login_attempts = np.random.poisson(2.0)  # Normal activity
             bf_contained = False
-        
+
         if self.active_attack in ["ransomware", "both"]:
             file_access_rate, cpu_usage, rw_contained = self.ransomware.step(defender_action)
         else:
             file_access_rate = np.random.poisson(5.0)  # Normal activity
             cpu_usage = np.random.normal(30, 5)
             rw_contained = False
-        
+
         # Flow duration (correlated with attack activity)
         if self.bruteforce.is_attacking:
             flow_duration = np.random.exponential(100)  # Shorter flows during attack
         else:
             flow_duration = np.random.exponential(500)  # Longer normal flows
-        
+
+        # ------------------------------------------------------------------ #
+        # Lateral movement / exfiltration signals (Improvement 2)             #
+        # ------------------------------------------------------------------ #
+        # outbound_connections: Poisson-modelled outbound TCP count.
+        #   - Brute-force ACTIVE/COMPROMISED: attacker probes internal hosts
+        #     → higher outbound count (lateral movement, MITRE T1021)
+        #   - Ransomware ENCRYPTION/DATA_LOSS: exfiltration spike (MITRE T1041)
+        #   - Normal: low stable baseline (~5 connections)
+        bf_stage = self.bruteforce.state.value   # 0-3
+        rw_stage = self.ransomware.state.value   # 0-3
+
+        outbound_base = 5.0
+        if bf_stage >= 2:            # ACTIVE or COMPROMISED brute-force
+            outbound_base += 30.0 * bf_stage
+        if rw_stage >= 2:            # ENCRYPTION or DATA_LOSS ransomware
+            outbound_base += 50.0 * (rw_stage - 1)   # sharp exfiltration spike
+        outbound_connections = float(np.random.poisson(max(outbound_base, 1.0)))
+
+        # unique_dst_ports: Count of distinct destination ports.
+        #   - C2 beaconing (brute-force PROBING+): scan over many ports
+        #   - Normal: small set of standard ports (e.g., 80, 443, 22) → ~3-5
+        port_base = 3.0
+        if bf_stage >= 1:            # PROBING+: port scanning
+            port_base += 10.0 * bf_stage
+        if rw_stage >= 1:            # EXECUTION+: C2 callback on unusual ports
+            port_base += 5.0 * rw_stage
+        unique_dst_ports = float(
+            np.clip(np.random.poisson(max(port_base, 1.0)), 1, 65535)
+        )
+
         # Determine overall attack status
         is_attack_active = self.bruteforce.is_attacking or self.ransomware.is_attacking
-        
+
         # Attack stage (max of both)
-        attack_stage = max(self.bruteforce.state.value, self.ransomware.state.value)
-        
+        attack_stage = max(bf_stage, rw_stage)
+
         return AttackObservation(
             login_attempts=login_attempts,
             file_access_rate=file_access_rate,
             cpu_usage=np.clip(cpu_usage, 0, 100),
             flow_duration=flow_duration,
             is_attack_active=is_attack_active,
-            attack_stage=attack_stage
+            attack_stage=attack_stage,
+            outbound_connections=outbound_connections,
+            unique_dst_ports=unique_dst_ports,
         )
     
     @property

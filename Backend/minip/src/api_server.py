@@ -5,6 +5,7 @@ Serves collected metrics, alerts, and attack graph data with WebSocket support
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -173,38 +174,60 @@ def handle_disconnect():
     print(f'Client disconnected: {request.sid}')
 
 
+def _file_md5(filepath) -> str:
+    """
+    Compute MD5 hex-digest of a file's current contents.
+
+    Using the full file bytes rather than os.path.getsize() avoids silent
+    misses when file content changes but the byte length stays the same
+    (e.g., entry replaced by same-length JSON, or file atomically rewritten).
+
+    Returns empty string if the file does not exist or cannot be read.
+    """
+    try:
+        with open(filepath, "rb") as f:
+            return hashlib.md5(f.read()).hexdigest()
+    except Exception:
+        return ""
+
+
 # Background thread to watch for file changes and emit updates
 def watch_files():
-    """Watch log files for changes and emit updates via WebSocket"""
-    last_history_size = 0
-    last_alerts_size = 0
-    
+    """Watch log files for changes and emit updates via WebSocket.
+
+    Change detection uses MD5 hashing rather than file-size comparison so
+    that updates are never silently dropped when content changes but the
+    file length happens to remain the same.
+    """
+    last_history_hash = ""
+    last_alerts_hash  = ""
+
     while True:
         try:
             # Check history file for new metrics
             if os.path.exists(HISTORY_FILE):
-                current_size = os.path.getsize(HISTORY_FILE)
-                if current_size != last_history_size:
-                    last_history_size = current_size
+                current_hash = _file_md5(HISTORY_FILE)
+                if current_hash != last_history_hash:
+                    last_history_hash = current_hash
                     history = read_json_file(HISTORY_FILE, [])
                     if history:
                         latest_metrics = history[-1]
-                        socketio.emit('metrics', latest_metrics)
+                        socketio.emit("metrics", latest_metrics)
                         print(f"Emitted metrics update: {latest_metrics.get('timestamp')}")
-            
+
             # Check alerts file for new alerts
             if os.path.exists(ALERTS_FILE):
-                current_size = os.path.getsize(ALERTS_FILE)
-                if current_size != last_alerts_size:
-                    last_alerts_size = current_size
+                current_hash = _file_md5(ALERTS_FILE)
+                if current_hash != last_alerts_hash:
+                    last_alerts_hash = current_hash
                     alerts = read_json_file(ALERTS_FILE, [])
                     if alerts:
                         latest_alert = alerts[-1]
-                        socketio.emit('alert', latest_alert)
+                        socketio.emit("alert", latest_alert)
                         print(f"Emitted alert: {latest_alert.get('alert_id')}")
-            
+
             time.sleep(1)  # Check every second for real-time updates
-            
+
         except Exception as e:
             print(f"Error in file watcher: {e}")
             time.sleep(5)
