@@ -32,12 +32,14 @@
 
 ## Overview
 
-Kaisen is an intelligent security monitoring system that protects your infrastructure through real-time anomaly detection, automated threat analysis, and attack path visualization. Built with AI and machine learning, Kaisen provides comprehensive security monitoring for enterprise environments.
+Kaisen is an intelligent, dual-layer security monitoring system that protects your infrastructure and LLM agents through real-time anomaly detection, automated threat analysis, and attack path visualization. Built with AI and machine learning, Kaisen provides comprehensive security monitoring for both traditional enterprise environments (OS Layer) and LLM agent sessions (Agent Layer).
 
 **Project Statistics:**
 - 📦 ~15,000 lines of code
 - ✅ 179 passing tests (unit, integration, property-based)
-- 🚀 7-second collection interval
+- 🚀 7-second collection interval for OS metrics
+- 🧠 Dual-Layer DQN architecture (OS telemetry + LLM agent session monitoring)
+- 📊 SHAP-based explainability for AI interventions
 - ⚡ <100ms API response time
 - 🔄 <50ms WebSocket latency
 - 💾 JSON-based storage with efficient indexing
@@ -46,21 +48,25 @@ Kaisen is an intelligent security monitoring system that protects your infrastru
 
 ### AI & Machine Learning
 
-**Deep Q-Network (DQN) for Anomaly Detection**
+**Deep Q-Network (DQN) for OS Anomaly Detection**
 - **Framework**: TensorFlow 2.x with Keras API
 - **Model Architecture**: 
-  - Input Layer: 5 features (CPU, Memory, Processes, Network, IPs)
+  - Input Layer: 13 features (CPU, Memory, Processes, Network, IPs, + lateral movement signals)
   - Hidden Layers: 2 dense layers (64, 32 neurons) with ReLU activation
   - Output Layer: Q-values for action selection
 - **Training**: 994 episodes, 66,178 training steps on simulated attack scenarios
 - **Performance**: Epsilon-greedy exploration (ε=0.01), experience replay buffer
 - **Model Files**: `best_model.h5` (weights), `best_model_meta.json` (metadata)
 
+**Deep Q-Network (DQN) for LLM Agent Monitoring (Layer 2)**
+- **State Space**: 12D session observation (tool_call_rate, refusal_rate, response_entropy, etc.)
+- **Action Space**: 5 interventions (do_nothing, rate_limit, inject_prompt, escalate, terminate)
+- **Arbitration Logic**: Cross-layer detection catching synchronized OS + Agent attacks.
+- **Explainability**: SHAP (KernelExplainer) provides natural-language reasoning for all AI interventions.
+
 **Reinforcement Learning Agent**
 - **Algorithm**: Deep Q-Learning with experience replay
-- **State Space**: System metrics (CPU, memory, processes, network connections, unique IPs)
-- **Action Space**: Monitor, block IP, isolate host, terminate process
-- **Reward Function**: Penalizes anomalies, rewards normal behavior
+- **Reward Function**: Penalizes anomalies, rewards normal behavior, strict false-positive penalties
 - **Implementation**: Custom agent in `src/agent.py`
 
 ### Backend Technologies
@@ -265,14 +271,16 @@ Kaisen is an intelligent security monitoring system that protects your infrastru
 
 ## Key Features
 
-- **Real-Time Threat Detection**: Identifies security threats as they happen using AI-powered anomaly detection
-- **Automated Response**: Intelligently responds to incidents without manual intervention
-- **Attack Visualization**: Visual attack graphs show how threats move through your infrastructure
-- **Cross-Platform**: Works on Windows and Linux systems
-- **Lightweight**: Minimal resource usage (< 2% CPU overhead)
-- **Scalable**: Monitors from single machines to thousands of servers
-- **Modern UI**: Electron-based desktop application with real-time updates
-- **Comprehensive Testing**: 179 tests covering unit, integration, and property-based scenarios
+- **Dual-Layer Architecture**: Simultaneous monitoring of low-level OS telemetry and high-level LLM agent session behavior (Jailbreak detection).
+- **Real-Time Threat Detection**: Identifies security threats as they happen using AI-powered anomaly detection (DQN).
+- **Automated Response**: Intelligently responds to incidents without manual intervention, supporting both hard (terminate) and soft (escalate) actions.
+- **SHAP Explainability**: Generates natural language explanations for every AI intervention, fulfilling auditability requirements.
+- **Attack Visualization**: Visual attack graphs show how threats move through your infrastructure.
+- **Cross-Platform**: Works on Windows and Linux systems.
+- **Lightweight & Resilient**: Minimal resource usage (< 2% CPU overhead) with robust log rotation and hash-based file watching.
+- **Scalable**: Monitors from single machines to thousands of servers.
+- **Modern UI**: Electron-based desktop application with real-time updates.
+- **Comprehensive Testing**: 179 tests covering unit, integration, and property-based scenarios, plus Sim-to-Real gap evaluation via KL divergence.
 
 ## 📊 What Kaisen Monitors
 
