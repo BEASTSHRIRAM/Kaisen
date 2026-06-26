@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaisen Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+        }
+
+        .architecture-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            position: relative;
+        }
+
+        .layer {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .layer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf, #00d4ff);
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .layer-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .layer-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .components {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .component {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .component:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(0, 212, 255, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.1);
+        }
+
+        .component-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .component-desc {
+            font-size: 0.8rem;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        .arrow-down {
+            text-align: center;
+            font-size: 2rem;
+            color: #00d4ff;
+            opacity: 0.6;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .data-flow {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(123, 44, 191, 0.1));
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 40px;
+        }
+
+        .data-flow h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00d4ff;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .flow-number {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .components {
+                grid-template-columns: 1fr;
+            }
+            
+            .layer {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kaisen Architecture</h1>
+        <p class="subtitle">AI-Powered Security Monitoring System - System Architecture Overview</p>
+
+        <div class="architecture-flow">
+            <!-- Data Collection Layer -->
+            <div class="layer">
+                <div class="layer-title">
+                    <div class="layer-icon">1</div>
+                    Data Collection Layer
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-name">Log Collector</div>
+                        <div class="component-desc">Collects system metrics every 7 seconds (CPU, Memory, Processes)</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">Remote Collector</div>
+                        <div class="component-desc">Collects data from remote systems via HTTP/HTTPS</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">System Commands</div>
+                        <div class="component-desc">Executes WMIC, PowerShell, netstat for data collection</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow-down">↓</div>
+
+            <!-- AI Processing Layer -->
+            <div class="layer">
+                <div class="layer-title">
+                    <div class="layer-icon">2</div>
+                    AI Processing Layer
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-name">DQN OS Layer</div>
+                        <div class="component-desc">Deep Q-Network for OS anomaly detection with 13 input features</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">DQN Agent Layer</div>
+                        <div class="component-desc">Monitors LLM agent sessions for jailbreak detection</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">SHAP Explainer</div>
+                        <div class="component-desc">Provides natural language explanations for AI decisions</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">Alert Engine</div>
+                        <div class="component-desc">Generates security alerts from detected anomalies</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">Graph Engine</div>
+                        <div class="component-desc">Builds attack graphs to visualize threat paths</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow-down">↓</div>
+
+            <!-- API Layer -->
+            <div class="layer">
+                <div class="layer-title">
+                    <div class="layer-icon">3</div>
+                    API & Real-Time Layer
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-name">Flask Server</div>
+                        <div class="component-desc">REST API server providing endpoints for metrics, alerts, and graphs</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">Socket.IO</div>
+                        <div class="component-desc">WebSocket server for real-time updates to connected clients</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">CORS Handler</div>
+                        <div class="component-desc">Manages cross-origin requests for browser-based clients</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow-down">↓</div>
+
+            <!-- Frontend Layer -->
+            <div class="layer">
+                <div class="layer-title">
+                    <div class="layer-icon">4</div>
+                    Frontend Presentation Layer
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-name">React Application</div>
+                        <div class="component-desc">Main UI built with React 18, TypeScript, and Material UI</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">Electron Desktop</div>
+                        <div class="component-desc">Cross-platform desktop app wrapper for native experience</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">D3.js Charts</div>
+                        <div class="component-desc">Interactive attack graph visualization with force-directed layout</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">Chart.js</div>
+                        <div class="component-desc">Real-time metric charts showing CPU, memory, and network trends</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">Zustand Store</div>
+                        <div class="component-desc">State management for real-time data and user interactions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-flow">
+            <h2>Data Flow</h2>
+            <div class="flow-step">
+                <div class="flow-number">1</div>
+                <div>
+                    <strong>Collection:</strong> Log Collector gathers system metrics every 7 seconds using WMIC, PowerShell, and netstat commands
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">2</div>
+                <div>
+                    <strong>AI Processing:</strong> DQN models analyze metrics for anomalies, SHAP generates explanations, and Alert Engine creates security alerts
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">3</div>
+                <div>
+                    <strong>API Serving:</strong> Flask server provides REST endpoints and WebSocket pushes real-time updates to connected clients
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">4</div>
+                <div>
+                    <strong>Visualization:</strong> React frontend displays real-time metrics, interactive attack graphs, and security alerts to users
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive hover effects to components
+        document.querySelectorAll('.component').forEach(component => {
+            component.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px) scale(1.02)';
+            });
+            
+            component.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Animate arrows on scroll
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.arrow-down').forEach(arrow => {
+            arrow.style.opacity = '0';
+            arrow.style.transform = 'translateY(-20px)';
+            arrow.style.transition = 'all 0.5s ease';
+            observer.observe(arrow);
+        });
+
+        // Add click handlers for components to show details
+        document.querySelectorAll('.component').forEach(component => {
+            component.addEventListener('click', function() {
+                const name = this.querySelector('.component-name').textContent;
+                const desc = this.querySelector('.component-desc').textContent;
+                
+                // Create a simple alert or console log for now
+                console.log(`Component: ${name}\nDescription: ${desc}`);
+            });
+        });
+    </script>
+</body>
+</html>
