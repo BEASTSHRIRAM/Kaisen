@@ -63,23 +63,13 @@
 Kaisen is an intelligent, dual-layer security monitoring system that protects your infrastructure and LLM agents through real-time anomaly detection, automated threat analysis, and attack path visualization. Built with AI and machine learning, Kaisen provides comprehensive security monitoring for both traditional enterprise environments (OS Layer) and LLM agent sessions (Agent Layer).
 
 **Project Statistics:**
-<<<<<<< HEAD
-- ✅ 179 passing tests (unit, integration, property-based)
-- 🚀 7-second collection interval for OS metrics
-- 🧠 Dual-Layer DQN architecture (OS telemetry + LLM agent session monitoring)
-- 📊 SHAP-based explainability for AI interventions
-- ⚡ <100ms API response time
-- 🔄 <50ms WebSocket latency
-- 💾 JSON-based storage with efficient indexing
-=======
 - 179 passing tests (unit, integration, property-based)
 - 7-second collection interval for OS metrics
--  Dual-Layer DQN architecture (OS telemetry + LLM agent session monitoring)
+- Dual-Layer DQN architecture (OS telemetry + LLM agent session monitoring)
 - SHAP-based explainability for AI interventions
--  <100ms API response time
+- <100ms API response time
 - <50ms WebSocket latency
--  JSON-based storage with efficient indexing
->>>>>>> 781bab5dad982d8248a9bc5d4fe704d998e8ab0a
+- JSON-based storage with efficient indexing
 
 ## 🛠️ Tech Stack
 
