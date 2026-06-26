@@ -9,35 +9,7 @@
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 [![Tests](https://img.shields.io/badge/tests-179%20passing-success.svg)]()
 
-<br>
-
-<p align="center">
-  <img src="docs/imgs/kaisen.gif" alt="Kaisen Demo" width="90%">
-</p>
-
-<br>
-
-## Dashboard Preview
-
-<p align="center">
-  <img src="docs/imgs/dashboard.jpeg" alt="Kaisen Dashboard" width="80%">
-</p>
-
-<p align="center"><i>Real-time security monitoring dashboard with live metrics and AI-powered anomaly detection</i></p>
-
-<br>
-
-## Attack Graph Visualization
-
-<p align="center">
-  <img src="docs/imgs/attackgraph.jpeg" alt="Attack Graph" width="80%">
-</p>
-
-<p align="center"><i>Interactive attack path visualization showing potential threat propagation through your infrastructure</i></p>
-
-<br>
-
-## Table of Contents
+## 📋 Table of Contents
 
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
@@ -63,6 +35,7 @@
 Kaisen is an intelligent, dual-layer security monitoring system that protects your infrastructure and LLM agents through real-time anomaly detection, automated threat analysis, and attack path visualization. Built with AI and machine learning, Kaisen provides comprehensive security monitoring for both traditional enterprise environments (OS Layer) and LLM agent sessions (Agent Layer).
 
 **Project Statistics:**
+- 📦 ~15,000 lines of code
 - ✅ 179 passing tests (unit, integration, property-based)
 - 🚀 7-second collection interval for OS metrics
 - 🧠 Dual-Layer DQN architecture (OS telemetry + LLM agent session monitoring)
