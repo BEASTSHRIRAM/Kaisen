@@ -25,7 +25,7 @@ class CollectionConfig:
     collection_window_max: int = 10
     
     # Model settings
-    model_path: str = field(default_factory=lambda: str(PROJECT_ROOT / "models" / "best_model.h5"))
+    model_path: str = field(default_factory=lambda: str(PROJECT_ROOT / "models" / "best_model.weights.h5"))
     anomaly_threshold: float = 0.7
     
     # Storage settings

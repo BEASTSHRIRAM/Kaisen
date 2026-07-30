@@ -59,17 +59,31 @@ class FeatureVector:
         """
         Convert to format expected by the anomaly detection model.
         
-        The model expects features in a specific order:
-        [failed_logins, process_count, cpu_usage, network_connections]
+        The model expects 13-dimensional features (enhanced features):
+        [failed_logins, file_access_count, cpu_usage,      # 3: basic metrics
+         delta_logins, delta_files, delta_cpu,             # 6: deltas
+         ma_logins, ma_files, sustained, time_in_state,    # 10: moving avgs + state
+         outbound_conn, dst_ports, rare_port]              # 13: network features
+        
+        Currently, we have only 5 basic metrics, so we pad with zeros for enhanced features.
         
         Returns:
-            List of feature values in model-expected order
+            List of 13 feature values in model-expected order
         """
         return [
-            float(self.failed_logins),
-            float(self.process_count),
-            self.cpu_usage,
-            float(self.network_connections)
+            float(self.failed_logins),              # 0: login attempts
+            float(self.process_count),              # 1: file access (approximated by process count)
+            self.cpu_usage,                         # 2: cpu usage
+            0.0,                                    # 3: delta_logins (not computed)
+            0.0,                                    # 4: delta_files (not computed)
+            0.0,                                    # 5: delta_cpu (not computed)
+            float(self.failed_logins),              # 6: ma_logins (use current as MA)
+            float(self.process_count),              # 7: ma_files (use current as MA)
+            0.0,                                    # 8: sustained (not computed)
+            0.0,                                    # 9: time_in_state (not computed)
+            float(self.network_connections),        # 10: outbound_conn
+            float(self.unique_ip_count),            # 11: dst_ports (approximated by unique IPs)
+            0.0,                                    # 12: rare_port (not computed)
         ]
 
 

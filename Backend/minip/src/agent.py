@@ -47,6 +47,11 @@ def create_q_network(
     Returns:
         Keras Model
     """
+    # Ensure all are integers
+    action_size = int(action_size)
+    state_size = int(state_size)
+    hidden_layers = [int(h) for h in hidden_layers]
+    
     inputs = layers.Input(shape=(state_size,))
     x = inputs
     
@@ -70,7 +75,8 @@ def create_q_network(
         advantage = layers.Dense(action_size, name='advantage_output')(advantage)
         
         # Combine: Q = V + (A - mean(A))
-        outputs = value + (advantage - tf.reduce_mean(advantage, axis=1, keepdims=True))
+        mean_advantage = layers.Lambda(lambda x: tf.reduce_mean(x, axis=1, keepdims=True))(advantage)
+        outputs = layers.Add()([value, layers.Lambda(lambda x: x[0] - x[1])([advantage, mean_advantage])])
     else:
         # Standard architecture
         x = layers.Dense(hidden_layers[-1], activation='relu', 
@@ -491,12 +497,12 @@ class DQNAgent:
         """Save model to file."""
         os.makedirs(os.path.dirname(path) if os.path.dirname(path) else '.', exist_ok=True)
         
-        # Normalize path - use .h5 extension
-        base_path = path.replace('.pt', '').replace('.h5', '')
+        # Normalize path - use .weights.h5 extension for Keras 3 compatibility
+        base_path = path.replace('.pt', '').replace('.h5', '').replace('.weights.h5', '')
         
-        # Save weights
-        self.q_network.save_weights(f"{base_path}.h5")
-        self.target_network.save_weights(f"{base_path}_target.h5")
+        # Save weights with Keras 3 format (.weights.h5)
+        self.q_network.save_weights(f"{base_path}.weights.h5")
+        self.target_network.save_weights(f"{base_path}_target.weights.h5")
         
         # Save metadata
         import json
@@ -509,7 +515,7 @@ class DQNAgent:
         with open(f"{base_path}_meta.json", 'w') as f:
             json.dump(metadata, f)
         
-        print(f"Model saved to {base_path}.h5")
+        print(f"Model saved to {base_path}.weights.h5")
     
     def load(self, path: str) -> None:
         """Load model from file."""

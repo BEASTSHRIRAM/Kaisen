@@ -161,7 +161,7 @@ class ModelInterface:
         Initialize ModelInterface.  Falls back gracefully if model is missing.
 
         Args:
-            model_path: Path to the TensorFlow model file (.h5)
+            model_path: Path to the TensorFlow model file (.h5 or .weights.h5)
         """
         self.model_path = model_path
         self.model: Optional[object] = None  # tf.keras.Model when loaded
@@ -199,39 +199,31 @@ class ModelInterface:
             except (ValueError, OSError) as e:
                 logging.warning(
                     f"Could not load as complete model: {e}. "
-                    "Creating network architecture and loading weights..."
+                    "Creating Dueling DQN architecture and loading weights..."
                 )
                 try:
-                    import h5py
-                    with h5py.File(model_path, "r") as f:
-                        if "model_weights" in f.keys():
-                            layer_names = list(f["model_weights"].keys())
-                        else:
-                            layer_names = list(f.keys())
-                        logging.info(f"Detected {len(layer_names)} weight groups in saved model")
-
-                    self.model = tf.keras.Sequential([
-                        tf.keras.layers.Dense(128, activation="relu", input_shape=(4,)),
-                        tf.keras.layers.Dense(128, activation="relu"),
-                        tf.keras.layers.Dense(64, activation="relu"),
-                        tf.keras.layers.Dense(32, activation="relu"),
-                        tf.keras.layers.Dense(16, activation="relu"),
-                        tf.keras.layers.Dense(1, activation="sigmoid"),
-                    ])
+                    # Recreate the dueling DQN architecture
+                    from src.agent import create_q_network
+                    self.model = create_q_network(
+                        state_size=13,
+                        action_size=5,
+                        hidden_layers=[128, 64, 32],
+                        use_dueling=True
+                    )
                     try:
                         self.model.load_weights(model_path)
                         self.input_shape = self.model.input_shape
-                        logging.info(f"Weights loaded. Input shape: {self.input_shape}")
+                        logging.info(f"Dueling DQN weights loaded. Input shape: {self.input_shape}")
                     except Exception as weight_err:
                         logging.warning(
-                            f"Architecture mismatch loading weights: {weight_err}. "
+                            f"Failed to load weights into dueling architecture: {weight_err}. "
                             "Using untrained model for testing."
                         )
                         self.input_shape = self.model.input_shape
 
                 except Exception as arch_err:
                     logging.warning(
-                        f"Failed to reconstruct model architecture: {arch_err}. "
+                        f"Failed to reconstruct dueling DQN architecture: {arch_err}. "
                         "Activating RuleBasedAnomalyScorer as fallback."
                     )
                     self.model = None
