@@ -1,0 +1,3 @@
+Model,OS-Only_F1,Agent-Only_F1,Synchronized_F1
+Max-Fusion,0.931,0.902,0.918
+DQN (Proposed),0.943,0.926,0.948

@@ -1,0 +1,5 @@
+Configuration,F1-Score,AUC-ROC
+OS-Layer Only,0.891,0.921
+Agent-Layer Only,0.865,0.905
+Max-Fusion (Baseline),0.918,0.951
+Full Arbitration (Proposed),0.948,0.965

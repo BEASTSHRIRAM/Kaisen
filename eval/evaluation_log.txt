@@ -1,0 +1,38 @@
+[2026-08-01 21:17:33] ======================================================================
+[2026-08-01 21:17:33] KAISEN RESEARCH PAPER - COMPREHENSIVE EVALUATION
+[2026-08-01 21:17:33] ======================================================================
+[2026-08-01 21:17:33] === Generating Synthetic Data ===
+[2026-08-01 21:17:33] Generated OS-layer: 5000 normal, 1000 attack
+[2026-08-01 21:17:33] Generated Agent-layer: 5000 normal, 1000 attack
+[2026-08-01 21:17:33] 
+=== Running Baseline Evaluation ===
+[2026-08-01 21:17:39] IForest: F1=0.965, Acc=0.942
+[2026-08-01 21:17:39] SVM: F1=0.909, Acc=0.833
+[2026-08-01 21:17:39] Z-Score: F1=0.000, Acc=0.167
+[2026-08-01 21:17:39] 
+=== Running DQN Evaluation ===
+[2026-08-01 21:17:39] DQN OS-Layer: F1=0.948, AUC=0.965
+[2026-08-01 21:17:39] 
+=== Generating ROC Curves ===
+[2026-08-01 21:17:50] Saved: C:\myprojects\Kaisen\eval\figures\01_roc_curves.pdf
+[2026-08-01 21:17:50] 
+=== Generating Ablation Study ===
+[2026-08-01 21:17:51] Saved: C:\myprojects\Kaisen\eval\figures\02_ablation_study.pdf
+[2026-08-01 21:17:51] 
+=== Generating Detection Latency ===
+[2026-08-01 21:17:51] Saved: C:\myprojects\Kaisen\eval\figures\03_detection_latency.pdf
+[2026-08-01 21:17:51] 
+=== Generating Confusion Matrix ===
+[2026-08-01 21:17:54] Saved: C:\myprojects\Kaisen\eval\figures\04_confusion_matrix.pdf
+[2026-08-01 21:17:54] 
+=== Generating Results Table ===
+[2026-08-01 21:17:57] Saved results table: C:\myprojects\Kaisen\eval\results\comprehensive_results.csv
+[2026-08-01 21:18:02] Saved LaTeX table: C:\myprojects\Kaisen\eval\results\results_table.tex
+[2026-08-01 21:18:02] 
+======================================================================
+[2026-08-01 21:18:02] EVALUATION COMPLETE
+[2026-08-01 21:18:02] ======================================================================
+[2026-08-01 21:18:02] Total time: 0:00:28.391741
+[2026-08-01 21:18:02] Figures generated: 4
+[2026-08-01 21:18:02] Results saved to: C:\myprojects\Kaisen\eval\results
+[2026-08-01 21:18:02] Figures saved to: C:\myprojects\Kaisen\eval\figures

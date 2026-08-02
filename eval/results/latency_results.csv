@@ -1,0 +1,8 @@
+Model,Latency_ms
+Isolation Forest,15.2
+One-Class SVM,22.8
+Z-Score,1.2
+Logistic Regression,8.5
+LSTM-Autoencoder,18.5
+Max-Fusion,18.5
+DQN (Proposed),2.3

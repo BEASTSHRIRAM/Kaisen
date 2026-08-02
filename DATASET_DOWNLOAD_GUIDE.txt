@@ -1,0 +1,362 @@
+================================================================================
+KAISEN RESEARCH - PUBLIC DATASET DOWNLOAD GUIDE
+================================================================================
+
+Status: Ready to download real-world network intrusion detection datasets
+Using: Firecrawl MCP to locate official sources
+Date: August 1, 2026
+
+================================================================================
+OPTION 1: CICIDS2017 (Recommended - Easiest)
+================================================================================
+
+**Official Source**: University of New Brunswick - Canadian Institute for Cybersecurity
+**Dataset Name**: Intrusion Detection Evaluation Dataset (CIC-IDS2017)
+**Size**: ~50GB total (11.8 million network flows, 85 features)
+**Time Period**: July 3-7, 2017
+**Format**: CSV (machine learning ready) or PCAP (raw)
+
+DOWNLOAD METHODS:
+
+A) Direct HTTP Download (Easiest - Choose This)
+   URL: http://cicresearch.ca/CICDataset/CIC-IDS-2017/
+   
+   Files Available:
+   - MachineLearningCSV.zip (Most useful for our purposes)
+   - GeneratedLabelledFlows.zip (Alternative)
+   - PCAP files (Raw network traffic)
+   
+   Steps:
+   1. Go to: http://cicresearch.ca/CICDataset/CIC-IDS-2017/
+   2. Click "MachineLearningCSV.zip" (download CSV files)
+   3. Extract to: c:\myprojects\Kaisen\datasets\CICIDS2017\
+   4. CSV files ready to use
+
+B) Kaggle Mirror (Alternative if URL above is slow)
+   URL: https://www.kaggle.com/datasets/chethuhn/network-intrusion-dataset
+   
+   Steps:
+   1. Create free Kaggle account
+   2. Download dataset
+   3. Extract to: c:\myprojects\Kaisen\datasets\CICIDS2017\
+
+DATASET CONTENTS:
+
+**Day-by-day breakdown:**
+- Monday (Normal Traffic): 11.0 GB - benign activity only
+- Tuesday (FTP/SSH Brute Force): 11 GB - brute force attacks
+- Wednesday (DoS/DDoS): 13 GB - denial of service attacks
+- Thursday (Web Attacks): 7.8 GB - SQL injection, XSS, etc.
+- Friday (Botnet/Port Scans): 8.3 GB - malware and reconnaissance
+
+**Attack Types Included:**
+✓ Brute Force (FTP, SSH)
+✓ DoS (Slowloris, Hulk, GoldenEye)
+✓ DDoS (LOIT - Low Orbit Ion Cannon)
+✓ Web Attacks (SQL injection, XSS)
+✓ Infiltration (Lateral movement, backdoor)
+✓ Botnet (ARES malware)
+✓ Heartbleed (SSL vulnerability)
+
+**Features Included:**
+- 80+ network flow features
+- Source/Destination IP, Port, Protocol
+- Flow duration, packet counts, byte counts
+- Flag statistics (SYN, ACK, FIN, RST, PSH, URG)
+- Average/Min/Max packet sizes
+- Inter-arrival times
+- Label (Normal or specific attack type)
+
+**CSV SCHEMA** (Important for mapping to our 13-feature OS-layer):
+┌─ Source IP
+├─ Destination IP
+├─ Source Port
+├─ Destination Port
+├─ Protocol
+├─ Flow Duration
+├─ Total Forward Packets
+├─ Total Backward Packets
+├─ Total Payload Forward
+├─ Total Payload Backward
+├─ Forward Packet Size Average
+├─ Backward Packet Size Average
+├─ [70+ more features]
+└─ Label (Normal or Attack)
+
+MAPPING TO KAISEN'S 13-FEATURE OS-LAYER:
+┌─ cpu_usage → derived from packet rate / time
+├─ memory_usage → derived from flow complexity score
+├─ process_count → mapped from port diversity
+├─ network_connections → total forward + backward packets
+├─ unique_ips → count of unique destination IPs
+├─ failed_logins → detected in SSH attempts on port 22
+├─ lateral_movement → port scan patterns (90+ ports)
+├─ port_scan_score → scanning behavior detection
+├─ resource_exhaustion → flow duration + packet rate
+├─ entropy_spike → packet size variance
+├─ connection_rate → packets per second
+├─ anomaly_score → aggregate statistical deviation
+└─ previous_anomaly_score → temporal correlation
+
+================================================================================
+OPTION 2: CICIDS2018 (Alternative - More Comprehensive)
+================================================================================
+
+**Official Source**: AWS Open Data + Communications Security Establishment (CSE)
+**Dataset Name**: CSE-CIC-IDS2018
+**Size**: ~80GB total (10+ million flows, 83 features)
+**Time Period**: February-March 2018
+**Format**: CSV (AWS S3) or Local Download
+**Attack Scenarios**: 7 types (more comprehensive than 2017)
+
+DOWNLOAD METHODS:
+
+A) AWS S3 Sync (Fastest - requires AWS CLI)
+   
+   Prerequisites:
+   - Install AWS CLI: https://aws.amazon.com/cli/
+   - No AWS account needed (public dataset, no-sign-request)
+   
+   Command:
+   ```
+   aws s3 sync --no-sign-request --region us-east-1 "s3://cse-cic-ids2018/" "c:\myprojects\Kaisen\datasets\CICIDS2018\"
+   ```
+   
+   (Takes 2-3 hours depending on bandwidth)
+
+B) Kaggle Mirror (Easier but slower)
+   URL: https://www.kaggle.com/datasets/primus11/cic-ids-2018-dataset
+   
+   Steps:
+   1. Create Kaggle account
+   2. Download full dataset
+   3. Extract to: c:\myprojects\Kaisen\datasets\CICIDS2018\
+
+C) Direct HTTP (If S3 and Kaggle are unavailable)
+   AWS Registry: https://registry.opendata.aws/cse-cic-ids2018/
+   (Links to alternative mirrors listed)
+
+DATASET CONTENTS (More diverse than 2017):
+
+**Attack Types (7 total):**
+✓ Brute Force (FTP/SSH - Patator tool)
+✓ Heartbleed (OpenSSL vulnerability - Heartleech tool)
+✓ Botnet (Zeus + Ares - command control)
+✓ DoS (Slowloris, GoldenEye, Slowhttptest)
+✓ DDoS (HOIC/LOIC - Low Orbit Ion Cannon)
+✓ Web Attacks (DVWA - SQL injection, XSS, brute force)
+✓ Infiltration (Malware + lateral movement)
+
+**Infrastructure (More realistic):**
+- 5 departments (R&D, Management, Technician, Secretary, IT)
+- 420 client machines + 30 servers
+- 50 attacking machines
+- Multiple Windows OS versions (7, 8.1, 10)
+- Ubuntu/Linux servers
+- AWS-based deployment (realistic cloud scenario)
+
+**Features (83 total):**
+- 80+ network flow features (same as CICIDS2017 + more)
+- Event logs from victim machines
+- System-level telemetry
+- Better attack diversity
+
+================================================================================
+QUICK RECOMMENDATION
+================================================================================
+
+For Kaisen research paper evaluation, use CICIDS2017:
+
+WHY:
+1. Simpler download (direct HTTP, no AWS CLI needed)
+2. Smaller than 2018 (easier to process)
+3. Well-established benchmark (more citations)
+4. MachineLearningCSV.zip already processed for ML
+5. Covers core attack types (brute force, DoS, DDoS, web, botnet)
+
+DOWNLOAD SEQUENCE:
+
+Step 1: Create dataset directory
+  mkdir c:\myprojects\Kaisen\datasets
+  mkdir c:\myprojects\Kaisen\datasets\CICIDS2017
+
+Step 2: Download (estimate: 15-30 minutes on typical connection)
+  Go to: http://cicresearch.ca/CICDataset/CIC-IDS-2017/
+  Click: MachineLearningCSV.zip
+  Download to: c:\myprojects\Kaisen\datasets\
+
+Step 3: Extract
+  Extract MachineLearningCSV.zip to: c:\myprojects\Kaisen\datasets\CICIDS2017\
+
+Step 4: Verify
+  Should contain files like:
+  - Friday-23-02-2018_TrafficLabelled_v2.csv
+  - Thursday-22-02-2018_TrafficLabelled_v2.csv
+  - [etc. for all 5 days]
+
+Step 5: Ready to use
+  Update eval/config.py with CICIDS2017 data path
+  Run: python eval/load_cicids2017.py
+
+================================================================================
+NSL-KDD (BONUS - Simpler Baseline)
+================================================================================
+
+If CICIDS datasets are too large for initial testing:
+
+**URL**: https://www.unb.ca/cic/datasets/nsl-kdd.html
+**Size**: ~300 MB (much smaller)
+**Records**: 125,973 training samples + 22,544 test samples
+**Features**: 41 features (simpler than CICIDS)
+
+DOWNLOAD:
+1. Go to: https://www.unb.ca/cic/datasets/nsl-kdd.html
+2. Download KDDTrain+.zip and KDDTest+.zip
+3. Extract to: c:\myprojects\Kaisen\datasets\NSLKDD\
+
+Good for:
+- Quick testing before full CICIDS evaluation
+- Baseline comparison
+- Lighter hardware requirements
+
+================================================================================
+INTEGRATION WITH KAISEN EVAL
+================================================================================
+
+After downloading CICIDS2017, create loader script:
+
+File: eval/load_cicids2017.py
+```python
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+# Load CICIDS2017 data
+data_dir = Path("../datasets/CICIDS2017")
+csv_files = list(data_dir.glob("*.csv"))
+
+# Combine all daily files
+dfs = []
+for file in csv_files:
+    df = pd.read_csv(file)
+    dfs.append(df)
+
+data = pd.concat(dfs, ignore_index=True)
+
+# Extract features and labels
+X = data.drop(['Label'], axis=1).values
+y = (data['Label'] != 'BENIGN').astype(int).values
+
+# Feature mapping to Kaisen's 13-feature OS-layer
+# [See mapping above]
+
+print(f"Loaded {len(data)} flows, {len(X[0])} features")
+print(f"Attack rate: {y.sum() / len(y) * 100:.1f}%")
+```
+
+Then update eval/run_research_evaluation.py to:
+1. Load CICIDS2017 instead of synthetic
+2. Use real feature extraction
+3. Report results on real-world data
+4. Compare baselines on same data
+
+This elevates the paper from "synthetic evaluation" to "real-world benchmark."
+
+================================================================================
+CITATION REQUIREMENTS
+================================================================================
+
+When using CICIDS2017, cite:
+
+@article{sharafaldin2018toward,
+  title={Toward Generating a New Intrusion Detection Dataset and 
+         Intrusion Traffic Characterization},
+  author={Sharafaldin, Iman and Lashkari, Arash Habibi and 
+          Ghorbani, Ali A},
+  journal={4th International Conference on Information Systems 
+           Security and Privacy (ICISSP)},
+  year={2018},
+  month={January},
+  address={Portugal}
+}
+
+When using CICIDS2018, cite:
+
+Registry: https://registry.opendata.aws/cse-cic-ids2018/
+Paper: Same as CICIDS2017 (both from same authors/institution)
+
+================================================================================
+HARDWARE REQUIREMENTS
+================================================================================
+
+For Full CICIDS2017 Processing:
+- Storage: 60 GB free (dataset + processing space)
+- RAM: 16 GB minimum (8 GB if processing in batches)
+- CPU: 4+ cores recommended
+- Network: 100 Mbps+ for ~15-30 minute download
+
+For Batch Processing:
+- Load one day at a time (~13 GB per day)
+- Process and cache features
+- Merge results
+- Reduces memory footprint to ~4 GB
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Q: Download URL is slow or down?
+A: Use Kaggle mirror: https://www.kaggle.com/datasets/chethuhn/network-intrusion-dataset
+
+Q: AWS S3 command not working?
+A: Install AWS CLI first: pip install awscli
+   Then: aws s3 sync --no-sign-request --region us-east-1 "s3://cse-cic-ids2018/" dest
+
+Q: CSV files are huge (13 GB per day)?
+A: Load in chunks:
+   df = pd.read_csv("file.csv", chunksize=100000)
+   for chunk in df:
+       process(chunk)
+
+Q: Feature mapping unclear?
+A: See MAPPING TO KAISEN'S 13-FEATURE OS-LAYER section above
+   Extract statistical features from network flows to approximate OS metrics
+
+Q: Labels are string ("BENIGN", "FTP-Patator")?
+A: Convert to binary:
+   y = (data['Label'] != 'BENIGN').astype(int)
+   1 = attack, 0 = benign
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Download CICIDS2017 (15-30 min)
+2. Extract to: c:\myprojects\Kaisen\datasets\CICIDS2017\
+3. Create: eval/load_cicids2017.py
+4. Update: eval/run_research_evaluation.py to load CICIDS data
+5. Run evaluation: python eval/run_research_evaluation.py
+6. Report results on REAL-WORLD data instead of synthetic
+
+This moves your paper from "promising research" to "publishable research."
+
+================================================================================
+FINAL NOTE
+================================================================================
+
+Using CICIDS2017 in your paper:
+- Eliminates "only synthetic data" limitation
+- Provides established benchmark for comparison
+- Shows reproducibility (anyone can download & verify)
+- Increases acceptance odds at top conferences
+- Justifies results (not hand-crafted attack scenarios)
+
+Recommended: Download today, integrate by tomorrow, paper results by day after.
+
+Questions? See CICIDS documentation:
+https://www.unb.ca/cic/datasets/ids-2017.html
+https://www.unb.ca/cic/datasets/ids-2018.html
+
+Good luck! Your paper will be much stronger with real data. 🚀
+
+================================================================================
