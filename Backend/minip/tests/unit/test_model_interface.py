@@ -38,19 +38,19 @@ class TestModelInterfaceInit:
         assert model_interface.input_shape is not None
     
     def test_init_with_missing_model_file(self):
-        """Test initialization with non-existent model file."""
-        with pytest.raises(FileNotFoundError) as exc_info:
-            ModelInterface("/nonexistent/path/model.h5")
-        
-        assert "Model file not found" in str(exc_info.value)
+        """A missing DQN model activates the operational fallback."""
+        model_interface = ModelInterface("/nonexistent/path/model.h5")
+
+        assert model_interface.is_loaded() is True
+        assert model_interface.detection_mode() == "rule-based"
     
     @patch('src.model_interface.tf', None)
     def test_init_without_tensorflow(self):
-        """Test initialization when TensorFlow is not installed."""
-        with pytest.raises(ImportError) as exc_info:
-            ModelInterface("dummy_path.h5")
-        
-        assert "TensorFlow is not installed" in str(exc_info.value)
+        """TensorFlow being unavailable still leaves detection operational."""
+        model_interface = ModelInterface("dummy_path.h5")
+
+        assert model_interface.is_loaded() is True
+        assert model_interface.detection_mode() == "rule-based"
 
 
 class TestModelInterfaceIsLoaded:
@@ -68,17 +68,29 @@ class TestModelInterfaceIsLoaded:
         assert model_interface.is_loaded() is True
     
     def test_is_loaded_returns_false_when_model_not_loaded(self):
-        """Test is_loaded returns False when model is None."""
-        project_root = Path(__file__).parent.parent.parent
-        model_path = project_root / "models" / "best_model.h5"
-        
-        if not model_path.exists():
-            pytest.skip("Model file not found, skipping test")
-        
-        model_interface = ModelInterface(str(model_path))
+        """is_loaded is false only if both DQN and fallback are unavailable."""
+        model_interface = ModelInterface("/nonexistent/path/model.h5")
         model_interface.model = None
+        model_interface._fallback = None
         
         assert model_interface.is_loaded() is False
+
+    def test_fallback_predicts_when_model_is_missing(self):
+        """Fallback predictions must not attempt to call a missing DQN model."""
+        model_interface = ModelInterface("/nonexistent/path/model.h5")
+        feature_vector = FeatureVector(
+            cpu_usage=95.0,
+            memory_usage=50.0,
+            process_count=650,
+            network_connections=600,
+            failed_logins=31,
+            unique_ip_count=51,
+            timestamp=datetime.utcnow().isoformat() + 'Z',
+        )
+
+        result = model_interface.predict(feature_vector)
+        assert result.label == "anomaly"
+        assert result.anomaly_score >= 0.5
 
 
 class TestModelInterfacePreprocess:

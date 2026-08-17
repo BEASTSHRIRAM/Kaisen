@@ -3,8 +3,21 @@ Start both the log collector and API server together
 """
 import sys
 import os
+
+# Auto-detect and use local .venv Python if missing dependencies in current interpreter
+_backend_dir = os.path.dirname(os.path.abspath(__file__))
+_venv_python = os.path.join(_backend_dir, '.venv', 'Scripts', 'python.exe')
+if os.path.exists(_venv_python) and os.path.abspath(sys.executable).lower() != os.path.abspath(_venv_python).lower():
+    try:
+        import networkx
+    except ImportError:
+        os.execv(_venv_python, [_venv_python] + sys.argv)
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import threading
 import time
+
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -77,11 +90,18 @@ def run_api_server():
     socketio.run(app, host='0.0.0.0', port=8000, debug=False, allow_unsafe_werkzeug=True)
 
 if __name__ == '__main__':
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except Exception:
+            pass
+
     print("\n")
-    print("╔" + "=" * 58 + "╗")
-    print("║" + " " * 15 + "KAISEN BACKEND SERVICES" + " " * 20 + "║")
-    print("╚" + "=" * 58 + "╝")
+    print("+" + "=" * 58 + "+")
+    print("|" + " " * 15 + "KAISEN BACKEND SERVICES" + " " * 20 + "|")
+    print("+" + "=" * 58 + "+")
     print("\n")
+
     
     # Start collector in a separate thread
     collector_thread = threading.Thread(target=run_collector, daemon=True)

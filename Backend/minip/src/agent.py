@@ -491,12 +491,12 @@ class DQNAgent:
         """Save model to file."""
         os.makedirs(os.path.dirname(path) if os.path.dirname(path) else '.', exist_ok=True)
         
-        # Normalize path - use .h5 extension
-        base_path = path.replace('.pt', '').replace('.h5', '')
+        # Normalize path and use Keras' explicit weights suffix.
+        base_path = path.replace('.pt', '').replace('.weights.h5', '').replace('.h5', '')
         
         # Save weights
-        self.q_network.save_weights(f"{base_path}.h5")
-        self.target_network.save_weights(f"{base_path}_target.h5")
+        self.q_network.save_weights(f"{base_path}.weights.h5")
+        self.target_network.save_weights(f"{base_path}_target.weights.h5")
         
         # Save metadata
         import json
@@ -509,30 +509,27 @@ class DQNAgent:
         with open(f"{base_path}_meta.json", 'w') as f:
             json.dump(metadata, f)
         
-        print(f"Model saved to {base_path}.h5")
+        print(f"Model saved to {base_path}.weights.h5")
     
     def load(self, path: str) -> None:
         """Load model from file."""
         # Normalize path
-        base_path = path.replace('.pt', '').replace('.h5', '').replace('_q.weights', '').replace('_meta', '')
+        base_path = path.replace('.pt', '').replace('.weights.h5', '').replace('.h5', '').replace('_q.weights', '').replace('_meta', '')
         
-        # Try new format first, then old format
-        q_path = f"{base_path}.h5"
-        target_path = f"{base_path}_target.h5"
+        q_path = f"{base_path}.weights.h5"
+        target_path = f"{base_path}_target.weights.h5"
         meta_path = f"{base_path}_meta.json"
         
-        # Fall back to old format if needed
         if not os.path.exists(q_path):
-            q_path = f"{base_path}_q.weights.h5"
-            target_path = f"{base_path}_target.weights.h5"
-        
-        if os.path.exists(q_path):
-            self.q_network.load_weights(q_path)
-            if os.path.exists(target_path):
-                self.target_network.load_weights(target_path)
-            print(f"Model loaded from {q_path}")
-        else:
-            print(f"Warning: Model file not found at {q_path}")
+            raise FileNotFoundError(
+                f"No weights at {q_path}. Refusing to run with random weights."
+            )
+        if not os.path.exists(target_path):
+            raise FileNotFoundError(f"No target-network weights at {target_path}.")
+
+        self.q_network.load_weights(q_path)
+        self.target_network.load_weights(target_path)
+        print(f"Model loaded from {q_path}")
         
         # Load metadata
         import json

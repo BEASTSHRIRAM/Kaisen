@@ -52,9 +52,7 @@ class RuleBasedAnomalyScorer:
     The combined weighted score is then compared against a 0.5 decision
     boundary, consistent with ModelInterface label assignment.
 
-    Research note: This scorer deliberately mirrors NIST SP 800-53 SA-9
-    anomaly indicators and serves as the "rule-based baseline" reference
-    point in the sim-to-real evaluation.
+    This scorer is an operational fallback, not a standards-based detector.
     """
 
     THRESHOLDS = {
@@ -256,7 +254,11 @@ class ModelInterface:
         Returns:
             True if model is loaded and ready for predictions, False otherwise
         """
-        return self.model is not None
+        return self.model is not None or self._fallback is not None
+
+    def detection_mode(self) -> str:
+        """Return the active detection implementation for operator visibility."""
+        return "dqn" if self.model is not None else "rule-based"
     
     def predict(self, feature_vector: FeatureVector) -> PredictionResult:
         """
@@ -281,6 +283,9 @@ class ModelInterface:
             - 6.7: Return error status rather than crashing on prediction failure
             - 10.2: Continue operation after non-critical errors
         """
+        if self.model is None and self._fallback is not None:
+            return self._fallback.predict(feature_vector)
+
         if not self.is_loaded():
             error_msg = "Model is not loaded. Cannot make predictions."
             log_error(ErrorCategory.RECOVERABLE, "ModelInterface", error_msg)

@@ -140,13 +140,13 @@ def test_full_collection_pipeline():
         
         print("\n=== Integration Test PASSED ===")
         return True
-        
+
     except Exception as e:
         print(f"\n✗ Integration test FAILED: {e}")
         import traceback
         traceback.print_exc()
         return False
-        
+
     finally:
         # Clean up temporary directory
         if os.path.exists(test_dir):

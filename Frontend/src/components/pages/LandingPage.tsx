@@ -1,11 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Container, Grid, Card, CardContent } from '@mui/material';
-import {
-  Security as SecurityIcon,
-  Speed as SpeedIcon,
-  Visibility as VisibilityIcon,
-  AutoFixHigh as AutoFixHighIcon,
-} from '@mui/icons-material';
+import SecurityIcon from '@mui/icons-material/Security';
+import SpeedIcon from '@mui/icons-material/Speed';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+
 
 export default function LandingPage() {
   const navigate = useNavigate();

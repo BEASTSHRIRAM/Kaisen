@@ -18,6 +18,7 @@ Requirements validated:
 import subprocess
 import logging
 import time
+import shlex
 from typing import List
 from src.data_models import ExecutionResult
 
@@ -79,8 +80,15 @@ class TerminalExecutor:
         if not command or not command.strip():
             return False
         
-        # Extract base command (first token)
-        base_command = command.strip().split()[0]
+        try:
+            argv = shlex.split(command)
+        except ValueError:
+            return False
+        if not argv:
+            return False
+
+        # Extract base command without invoking a shell.
+        base_command = argv[0]
         
         # Check against whitelist
         is_allowed = base_command in self.whitelist
@@ -113,11 +121,32 @@ class TerminalExecutor:
             - 2.5: Enforces 30-second timeout
             - 2.6: Terminates commands exceeding timeout
         """
+        try:
+            argv = shlex.split(command)
+        except ValueError as exc:
+            return ExecutionResult(
+                success=False, stdout="", stderr="", return_code=-1,
+                execution_time=0.0, error_message=f"Unparseable command: {exc}"
+            )
+
+        if not argv:
+            return ExecutionResult(
+                success=False, stdout="", stderr="", return_code=-1,
+                execution_time=0.0, error_message="Command not whitelisted: empty command"
+            )
+
+        # Shell syntax has no place in a whitelisted executor. Reject it even
+        # though subprocess is invoked with shell=False as defense in depth.
+        shell_metacharacters = ";|&$`\n><"
+        if any(any(char in token for char in shell_metacharacters) for token in argv):
+            return ExecutionResult(
+                success=False, stdout="", stderr="", return_code=-1,
+                execution_time=0.0, error_message="Shell metacharacter rejected"
+            )
+
         # Validate whitelist
-        if not self.is_whitelisted(command):
-            # Extract base command safely
-            cmd_parts = command.split() if command else []
-            base_cmd = cmd_parts[0] if cmd_parts else 'empty'
+        if argv[0] not in self.whitelist:
+            base_cmd = argv[0]
             error_msg = f"Command not whitelisted: {base_cmd}"
             logger.warning(error_msg)
             return ExecutionResult(
@@ -136,8 +165,8 @@ class TerminalExecutor:
             logger.debug(f"Executing command: {command}")
             
             result = subprocess.run(
-                command,
-                shell=True,
+                argv,
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=self.timeout

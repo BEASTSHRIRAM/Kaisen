@@ -81,7 +81,11 @@ class TestProperty3WhitelistEnforcement:
             assert result.success is False
             assert result.return_code == -1
             assert result.error_message is not None
-            assert 'not whitelisted' in result.error_message.lower()
+            assert (
+                'not whitelisted' in result.error_message.lower()
+                or 'unparseable command' in result.error_message.lower()
+                or 'shell metacharacter rejected' in result.error_message.lower()
+                )
     
     @settings(max_examples=50)
     @given(
@@ -109,6 +113,15 @@ class TestProperty3WhitelistEnforcement:
         
         # Should be whitelisted
         assert executor.is_whitelisted(full_command) is True
+    def test_command_injection_is_rejected(self):
+        executor = TerminalExecutor(["ps"])
+
+        result = executor.execute("ps aux; id")
+
+        assert result.success is False
+        assert result.return_code == -1
+        assert result.error_message is not None
+        assert "shell metacharacter" in result.error_message.lower()
 
 
 class TestProperty4CommandExecutionErrorHandling:
@@ -271,29 +284,18 @@ class TestPropertyWhitelistValidation:
             assert result.success is False
     
     @settings(max_examples=50)
-    @given(
-        base_cmd=st.text(
-            alphabet=st.characters(whitelist_categories=('Lu', 'Ll', 'Nd')),
-            min_size=1,
-            max_size=20
-        ),
-        num_args=st.integers(min_value=0, max_value=10)
-    )
-    def test_whitelist_checks_base_command_only(self, base_cmd, num_args):
-        """
-        Property test: Whitelist validation only checks base command.
-        
-        For any base command and any number of arguments, only the base
-        command should be checked against the whitelist.
-        """
-        executor = TerminalExecutor([base_cmd])
-        
-        # Build command with multiple arguments
-        args = ' '.join(['arg'] * num_args)
-        full_command = f"{base_cmd} {args}".strip()
-        
-        # Should be whitelisted regardless of arguments
-        assert executor.is_whitelisted(full_command) is True
+    @given(st.sampled_from([';', '&&', '||', '|', '$(', '`', '\n', '>']))
+    def test_shell_metacharacters_are_rejected(self, metachar):
+        """Injection attempts must fail even when the command is whitelisted."""
+        executor = TerminalExecutor(['ps'])
+        result = executor.execute(f'ps aux{metachar}id')
+        assert result.success is False
+
+    def test_semicolon_injection_is_rejected(self):
+        """Regression test for command injection through a whitelisted command."""
+        executor = TerminalExecutor(['ps'])
+        result = executor.execute('ps aux; id')
+        assert result.success is False
 
 
 if __name__ == '__main__':

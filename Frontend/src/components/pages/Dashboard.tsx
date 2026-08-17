@@ -13,13 +13,12 @@ import {
 } from 'chart.js';
 import { useStore } from '../../store/useStore';
 import MetricCard from '../MetricCard';
-import {
-  Memory as MemoryIcon,
-  Speed as SpeedIcon,
-  NetworkCheck as NetworkIcon,
-  Lock as LockIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
+import MemoryIcon from '@mui/icons-material/Memory';
+import SpeedIcon from '@mui/icons-material/Speed';
+import NetworkIcon from '@mui/icons-material/NetworkCheck';
+import LockIcon from '@mui/icons-material/Lock';
+import WarningIcon from '@mui/icons-material/Warning';
+
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 

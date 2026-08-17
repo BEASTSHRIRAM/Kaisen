@@ -6,6 +6,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import hashlib
+import hmac
 import json
 import os
 from pathlib import Path
@@ -13,8 +14,28 @@ import threading
 import time
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend access
-socketio = SocketIO(app, cors_allowed_origins="*")  # WebSocket support
+allowed_origins = [
+    origin.strip()
+    for origin in os.environ.get(
+        "KAISEN_ALLOWED_ORIGINS",
+        "http://localhost:5173"
+    ).split(",")
+    if origin.strip()
+]
+
+if "*" in allowed_origins:
+    raise RuntimeError(
+        "Wildcard CORS origin '*' is not allowed."
+    )
+api_token = os.environ.get("KAISEN_API_TOKEN")
+
+if not api_token:
+    raise RuntimeError(
+        "KAISEN_API_TOKEN is not configured. "
+        "Set it before starting the Kaisen API server."
+    )
+CORS(app, origins=allowed_origins)
+socketio = SocketIO(app, cors_allowed_origins=allowed_origins)
 
 # Paths to data files
 BASE_DIR = Path(__file__).parent.parent
@@ -36,7 +57,29 @@ def read_json_file(filepath, default=None):
         return default if default is not None else []
 
 
+def require_token(view):
+    """Require a valid bearer token for protected API endpoints."""
+    from functools import wraps
+
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        auth_header = request.headers.get("Authorization", "")
+
+        if not auth_header.startswith("Bearer "):
+            return jsonify({"error": "unauthorized"}), 401
+
+        supplied = auth_header[len("Bearer "):].strip()
+
+        if not supplied or not hmac.compare_digest(supplied, api_token):
+            return jsonify({"error": "unauthorized"}), 401
+
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
 @app.route('/api/metrics/latest', methods=['GET'])
+@require_token
 def get_latest_metrics():
     """Get the most recent system metrics"""
     history = read_json_file(HISTORY_FILE, [])
@@ -56,6 +99,7 @@ def get_latest_metrics():
 
 
 @app.route('/api/alerts', methods=['GET'])
+@require_token
 def get_alerts():
     """Get all alerts"""
     alerts = read_json_file(ALERTS_FILE, [])
@@ -77,6 +121,7 @@ def get_alerts():
 
 
 @app.route('/api/graph', methods=['GET'])
+@require_token
 def get_attack_graph():
     """Get the attack graph"""
     graph = read_json_file(GRAPH_FILE, {
@@ -92,6 +137,7 @@ def get_attack_graph():
 
 
 @app.route('/api/suspicious-ips', methods=['GET'])
+@require_token
 def get_suspicious_ips():
     """Get suspicious IP addresses from alerts"""
     alerts = read_json_file(ALERTS_FILE, [])
@@ -118,6 +164,7 @@ def get_suspicious_ips():
 
 
 @app.route('/api/history', methods=['GET'])
+@require_token
 def get_history():
     """Get historical metrics"""
     limit = request.args.get('limit', default=100, type=int)
@@ -128,6 +175,7 @@ def get_history():
 
 
 @app.route('/api/stats', methods=['GET'])
+@require_token
 def get_stats():
     """Get overall statistics"""
     history = read_json_file(HISTORY_FILE, [])
@@ -157,7 +205,11 @@ def get_stats():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({"status": "healthy", "service": "kaisen-api"})
+    return jsonify({
+        "status": "healthy",
+        "service": "kaisen-api",
+        "authentication_configured": api_token is not None,
+    })
 
 
 # WebSocket event handlers
@@ -256,4 +308,12 @@ if __name__ == '__main__':
     watcher_thread.start()
     
     # Run with SocketIO
-    socketio.run(app, host='0.0.0.0', port=8000, debug=True, allow_unsafe_werkzeug=True)
+    host = os.environ.get("KAISEN_HOST", "127.0.0.1")
+    port = int(os.environ.get("KAISEN_PORT", "8000"))
+
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=8000,
+        allow_unsafe_werkzeug=True
+)

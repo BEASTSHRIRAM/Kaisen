@@ -13,13 +13,12 @@ import {
   ListItemText,
   Chip,
 } from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  Warning as WarningIcon,
-  AccountTree as GraphIcon,
-  Security as SecurityIcon,
-  Description as LogsIcon,
-} from '@mui/icons-material';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import WarningIcon from '@mui/icons-material/Warning';
+import GraphIcon from '@mui/icons-material/AccountTree';
+import SecurityIcon from '@mui/icons-material/Security';
+import LogsIcon from '@mui/icons-material/Description';
+
 import { useStore } from '../store/useStore';
 import { apiService } from '../services/api';
 import { wsService } from '../services/websocket';
