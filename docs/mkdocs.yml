@@ -1,6 +1,7 @@
 site_name: Kaisen Documentation
 site_description: AI-Powered Security Monitoring System Documentation
 site_author: Kaisen Team
+docs_dir: .
 theme:
   name: material
   palette:
