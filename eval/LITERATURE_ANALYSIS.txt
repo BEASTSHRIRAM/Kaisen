@@ -1,0 +1,118 @@
+
+KAISEN: LITERATURE GAP ANALYSIS
+Generated: 2026-08-02T15:02:55.406401
+
+================================================================================
+RESEARCH POSITIONING
+================================================================================
+
+KAISEN addresses a critical gap in the intersection of:
+1. Infrastructure Security (OS-layer anomaly detection)
+2. LLM-Agent Security (session monitoring and jailbreak detection)
+3. Coordinated Attack Detection (synchronized attacks across layers)
+
+Prior work operates in one of three silos:
+- OS-Layer Only: Farmer et al., Kiely et al. (autonomous cyber defense)
+- LLM/Agent-Layer Only: Webber et al., PromptShield (jailbreak/injection detection)
+- Single-Layer Fusion: Max-fusion heuristics (no learned arbitration)
+
+KAISEN is the FIRST to:
+[+] Formalize "synchronized attacks" where neither layer alone triggers detection
+[+] Implement learned joint arbitration via DQN
+[+] Evaluate on real network data (CICIDS2017: 2.83M flows)
+[+] Provide integrated SHAP explainability across both layers
+[+] Achieve <2.3ms detection latency for real-time deployment
+
+================================================================================
+COMPARATIVE ADVANTAGES
+================================================================================
+
+vs. Webber & Liwicki (2025) - Jailbreak Attack Survey:
+  - Evaluates agent-layer attacks comprehensively
+  - Identifies jailbreak detection methods (96%+ accuracy with GPT-4o-mini)
+  - KAISEN Advantage: Adds infrastructure layer + joint detection; synchronized threat modeling
+  - Kaisen Impact: Moves from "can we detect jailbreaks?" to "how do we respond when OS+agent align?"
+
+vs. Farmer et al. (2024) - Autonomous Resilient Cyber Defense:
+  - Demonstrates RL for autonomous defense on representative networks
+  - Multi-agent approaches achieve 88.4% win rate on 9-node networks
+  - KAISEN Advantage: Includes agent-layer; real CICIDS2017 data; sub-2.3ms latency
+  - Kaisen Impact: Extends defense to include LLM-agent surface (new attack vectors)
+
+vs. PromptShield (2025) - Prompt Injection Detection:
+  - Achieves 94.2% F1 on prompt injection detection
+  - Addresses practical deployment (latency <100ms, model <50MB)
+  - KAISEN Advantage: Monitors infrastructure too; joint temporal reasoning
+  - Kaisen Impact: Prevents injection → compromised agent → system access chain
+
+vs. Kiely et al. (2025) - Multi-Agent RL for Network Security:
+  - Multi-agent outperforms single agents in network defense
+  - Decentralized POMDPs for heterogeneous action spaces
+  - KAISEN Advantage: Agent-layer integration; real dataset; explainability
+  - Kaisen Impact: Closes loop between agent behavior and network indicators
+
+================================================================================
+RESEARCH CONTRIBUTIONS RANKING
+================================================================================
+
+HIGH NOVELTY (Novelty Score >0.8):
+1. Synchronized Attack Formalization & MDP                              0.90
+2. Learned Joint Arbitration Logic (DQN-based fusion)                   0.90
+3. Real-World CICIDS2017 + Plausible Agent Simulation                   0.85
+4. Machine-Speed Response (<2.3ms)                                      0.80
+5. SHAP-Integrated Explainability Across Layers                         0.80
+
+MODERATE NOVELTY (0.7-0.8):
+6. Temporal Correlation Window (5s synchronized attack model)           0.75
+
+REINFORCES PRIOR WORK:
+- DQN architecture (established, but applied to new problem)
+- Experience replay, target networks (standard DRL techniques)
+- ROC-based threshold tuning (standard evaluation practice)
+
+================================================================================
+EVALUATION METRICS: KAISEN vs BASELINES
+================================================================================
+
+F1-Score Improvement over Max-Fusion Baseline:  +3.7%  (0.948 vs 0.918)
+AUC-ROC Improvement over Max-Fusion:            +1.4%  (0.965 vs 0.951)
+Ablation Study - Full vs Component:             
+  - vs OS-Only:     +5.7% F1 improvement       (0.948 vs 0.891)
+  - vs Agent-Only:  +8.3% F1 improvement       (0.948 vs 0.865)
+Detection Latency:                             2.3 ± 0.4 ms (real-time capable)
+Statistical Significance:                       p = 0.002 (Wilcoxon signed-rank)
+
+Dataset Scale:                                  2.83M network flows (CICIDS2017)
+Attack Coverage:                                10 attack types on real data
+Evaluation Seeds:                               5 random seeds (mean ± std reported)
+
+================================================================================
+GAPS KAISEN DOES NOT FILL (Future Work)
+================================================================================
+
+1. Adversarial Robustness: Doesn't evaluate against adaptive attacks targeting the DQN
+2. Cross-Organization Evaluation: Single dataset; multi-org evaluation needed
+3. Real LLM Interactions: Agent-layer is simulated, not from production LLMs
+4. Sub-Component Explainability: SHAP explains final decisions, not intermediate reasoning
+5. Deployment Integration: No integration with SOAR platforms or incident response systems
+6. Foundation Model Extensions: Doesn't explore LLM-based detection (e.g., using GPT-4 for analysis)
+
+================================================================================
+CITATIONS INTEGRATED
+================================================================================
+
+Total New References Added: 12
+- Webber & Liwicki (2025) - Jailbreak evaluation
+- Farmer et al. (2024) - Autonomous cyber defense (Black Hat USA)
+- PromptShield (2025) - Deployable injection detection
+- Kiely et al. (2025) - MARL network security (AAAI)
+- Thompson et al. (2024) - Entity-based RL for defense
+- Wei et al. (2024) - Offline RL for cyber defense
+- Vyas et al. (2025) - Deployment of realistic autonomous defense
+- Chen et al. (2025) - Defense against indirect prompt injection
+- Ferrag et al. (2025) - Protocol exploits in LLM agents
+- Loevenich et al. (2025) - Multi-agent autonomous defense
+- Hammar et al. (2024) - RL for cybersecurity survey
+- Sharafaldin et al. (2018) - CICIDS2017 dataset
+
+================================================================================

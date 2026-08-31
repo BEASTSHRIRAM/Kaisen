@@ -42,12 +42,36 @@ env/
 # Logs
 *.log
 
-# Models (large files)
+# Large Model Files (ALL WEIGHTS)
 *.h5
 *.weights.h5
+*.pt
+*.pth
+*.pkl
+*.pickle
+models/
+checkpoints/
 
-# Figures (generated visualizations)
+# Large Datasets
+ResearchDocs/datasets/
+Backend/minip/datasets/
+data/
+*.csv
+*.parquet
+
+# Generated artifacts (logs, metrics)
+logs/
+Backend/minip/logs/
+*.json
+
+# Large PDFs and documents (except research paper)
 Backend/minip/figures/
+eval/figures/
+docs/testpaper1/
+
+# Cache directories
+.cache/
+*.cache
 
 # Kiro IDE configuration and specs
 .kiro/
@@ -55,3 +79,11 @@ Backend/minip/figures/
 # OS
 .DS_Store
 Thumbs.db
+
+# Keep only essential files
+!ResearchDocs/docs/paper.pdf
+!ResearchDocs/docs/paper.tex
+!eval/generate_paper_pylatex.py
+!eval/kaisen_literature_comparison.py
+!eval/kaisen_vs_baselines.py
+!eval/load_cicids2017_real.py
