@@ -56,13 +56,15 @@ checkpoints/
 ResearchDocs/datasets/
 Backend/minip/datasets/
 data/
-*.csv
+eval/data/
 *.parquet
 
 # Generated artifacts (logs, metrics)
 logs/
 Backend/minip/logs/
-*.json
+Backend/minip/.coverage
+.hypothesis/
+Backend/minip/.hypothesis/
 
 # Large PDFs and documents (except research paper)
 Backend/minip/figures/

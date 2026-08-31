@@ -74,11 +74,11 @@ class LogCollector:
             'failed_logins': 'wevtutil qe Security /q:"*[System[(EventID=4625)]]" /c:100 /rd:true /f:text'
         },
         'linux': {
-            'cpu': 'top -bn1 | grep "Cpu(s)"',
+            'cpu': 'top -bn1',
             'memory': 'free -m',
             'processes': 'ps aux',
             'network': 'netstat -an',
-            'failed_logins': 'journalctl _SYSTEMD_UNIT=sshd.service | grep "Failed password" | tail -100'
+            'failed_logins': 'journalctl _SYSTEMD_UNIT=sshd.service --no-pager -n 100'
         }
     }
     

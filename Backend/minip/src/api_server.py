@@ -256,4 +256,7 @@ if __name__ == '__main__':
     watcher_thread.start()
     
     # Run with SocketIO
-    socketio.run(app, host='0.0.0.0', port=8000, debug=True, allow_unsafe_werkzeug=True)
+    host = os.environ.get("KAISEN_HOST", "127.0.0.1")
+    port = int(os.environ.get("KAISEN_PORT", "8000"))
+    debug = os.environ.get("KAISEN_DEBUG", "false").lower() == "true"
+    socketio.run(app, host=host, port=port, debug=debug, allow_unsafe_werkzeug=True)

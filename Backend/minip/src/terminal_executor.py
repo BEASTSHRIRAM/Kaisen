@@ -17,12 +17,29 @@ Requirements validated:
 
 import subprocess
 import logging
+import os
+import shlex
 import time
 from typing import List
 from src.data_models import ExecutionResult
 
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_command(command: str) -> List[str]:
+    """Parse an executable command without allowing shell syntax."""
+    if not command or not command.strip():
+        return []
+    try:
+        arguments = shlex.split(command, posix=os.name != "nt")
+    except ValueError:
+        return []
+
+    shell_metacharacters = ";|&$`\n><"
+    if any(any(char in argument for char in shell_metacharacters) for argument in arguments):
+        return []
+    return arguments
 
 
 class TerminalExecutor:
@@ -79,8 +96,11 @@ class TerminalExecutor:
         if not command or not command.strip():
             return False
         
-        # Extract base command (first token)
-        base_command = command.strip().split()[0]
+        arguments = _parse_command(command)
+        if not arguments:
+            return False
+
+        base_command = arguments[0]
         
         # Check against whitelist
         is_allowed = base_command in self.whitelist
@@ -113,11 +133,11 @@ class TerminalExecutor:
             - 2.5: Enforces 30-second timeout
             - 2.6: Terminates commands exceeding timeout
         """
+        arguments = _parse_command(command)
+
         # Validate whitelist
-        if not self.is_whitelisted(command):
-            # Extract base command safely
-            cmd_parts = command.split() if command else []
-            base_cmd = cmd_parts[0] if cmd_parts else 'empty'
+        if not arguments or arguments[0] not in self.whitelist:
+            base_cmd = arguments[0] if arguments else 'empty'
             error_msg = f"Command not whitelisted: {base_cmd}"
             logger.warning(error_msg)
             return ExecutionResult(
@@ -136,8 +156,8 @@ class TerminalExecutor:
             logger.debug(f"Executing command: {command}")
             
             result = subprocess.run(
-                command,
-                shell=True,
+                arguments,
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=self.timeout

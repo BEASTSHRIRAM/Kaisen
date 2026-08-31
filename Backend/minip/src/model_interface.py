@@ -248,7 +248,11 @@ class ModelInterface:
         Returns:
             True if model is loaded and ready for predictions, False otherwise
         """
-        return self.model is not None
+        return self.model is not None or self._fallback is not None
+
+    def detection_mode(self) -> str:
+        """Return the active detector for operator visibility."""
+        return "dqn" if self.model is not None else "rule-based"
     
     def predict(self, feature_vector: FeatureVector) -> PredictionResult:
         """
@@ -273,6 +277,9 @@ class ModelInterface:
             - 6.7: Return error status rather than crashing on prediction failure
             - 10.2: Continue operation after non-critical errors
         """
+        if self.model is None and self._fallback is not None:
+            return self._fallback.predict(feature_vector)
+
         if not self.is_loaded():
             error_msg = "Model is not loaded. Cannot make predictions."
             log_error(ErrorCategory.RECOVERABLE, "ModelInterface", error_msg)
