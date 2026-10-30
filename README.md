@@ -17,6 +17,20 @@
 
 <br>
 
+## 🎬 Watch the Demo — Kaisen Unified (Oct 2026)
+
+**Kaisen is now Kaisen Unified** — security for businesses running AI agents on their own servers. The host machine *and* the AI agent on it are monitored together and correlated into one plain-English incident story, with a live Agent Cockpit (tool calls, memory, context), an Attack Lab of playable attack scenarios, and subscription plans (Free / Pro ₹1,999 per server/month / Team).
+
+**▶ [Watch the demo video — edited cut (5:28, zoom-ins + highlights)](https://drive.google.com/file/d/1n6X4j_TBk4jl6bJzjqrTXeLQ8hFqCHQh/view?usp=drivesdk)**
+
+**▶ [Watch the full walkthrough (5:28, all 20 screens)](https://drive.google.com/file/d/1kkUQHMYH8mItP4dRVBbO-iORo6l-_O77/view?usp=drivesdk)**
+
+*Real screen recording of the running app: Landing → Login → Plans → Connect-your-server → Command Center → incident replay → Agent Cockpit → Incidents → Attack Lab (all 5 scenarios) → Tool Registry → Memory Inspector → Audit & Compliance → Fleet → Billing → Threat Intel → Settings. Scenario data in the demo is labelled DEMO MODE on screen — see the [honesty ledger](https://beastshriram.github.io/Kaisen/unified/overview/#honesty-ledger-what-is-real-today) for what is real vs simulated.*
+
+📖 **Docs:** [Kaisen Unified overview](https://beastshriram.github.io/Kaisen/unified/overview/) · [Exhibition demo guide](https://beastshriram.github.io/Kaisen/unified/exhibition-demo/)
+
+<br>
+
 ## Dashboard Preview
 
 <p align="center">
