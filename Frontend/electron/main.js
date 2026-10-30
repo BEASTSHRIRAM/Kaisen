@@ -18,8 +18,13 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.cjs'),
     },
-    backgroundColor: '#0a0e27',
-    icon: path.join(__dirname, '../public/icon.png'),
+    backgroundColor: '#02070A',
+    // public/ is not packaged — Vite copies it into dist/, and dist/** is
+    // what electron-builder ships. Resolve the icon from dist/ when
+    // packaged, from public/ in dev.
+    icon: app.isPackaged
+      ? path.join(__dirname, '../dist/icon.png')
+      : path.join(__dirname, '../public/icon.png'),
   });
 
   // Load the app - use app.isPackaged to detect dev vs production

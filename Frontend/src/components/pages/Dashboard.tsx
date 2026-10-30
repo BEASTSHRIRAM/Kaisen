@@ -35,16 +35,16 @@ export default function Dashboard() {
       {
         label: 'CPU Usage (%)',
         data: metricsHistory.map((m) => m.cpu_usage),
-        borderColor: '#00d4ff',
-        backgroundColor: 'rgba(0, 212, 255, 0.1)',
+        borderColor: '#0297DE',
+        backgroundColor: 'rgba(2, 151, 222, 0.1)',
         fill: true,
         tension: 0.4,
       },
       {
         label: 'Memory Usage (%)',
         data: metricsHistory.map((m) => m.memory_usage),
-        borderColor: '#ff4081',
-        backgroundColor: 'rgba(255, 64, 129, 0.1)',
+        borderColor: '#93A8B5',
+        backgroundColor: 'rgba(161, 161, 170, 0.1)',
         fill: true,
         tension: 0.4,
       },
@@ -104,7 +104,7 @@ export default function Dashboard() {
             value={currentMetrics?.cpu_usage.toFixed(1) || '0'}
             unit="%"
             icon={<SpeedIcon />}
-            color="#00d4ff"
+            color="#0297DE"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
@@ -113,7 +113,7 @@ export default function Dashboard() {
             value={currentMetrics?.memory_usage.toFixed(1) || '0'}
             unit="%"
             icon={<MemoryIcon />}
-            color="#ff4081"
+            color="#93A8B5"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
