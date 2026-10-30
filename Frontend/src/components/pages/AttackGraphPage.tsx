@@ -58,7 +58,7 @@ export default function AttackGraphPage() {
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M0,-5L10,0L0,5')
-      .attr('fill', (d) => (d === 'critical' ? '#f44336' : d === 'warning' ? '#ff9800' : '#00d4ff'));
+      .attr('fill', (d) => (d === 'critical' ? '#f44336' : d === 'warning' ? '#ff9800' : '#0297DE'));
 
     // Draw edges
     const link = g
@@ -217,7 +217,7 @@ export default function AttackGraphPage() {
       <Card sx={{ height: 600 }}>
         <CardContent sx={{ height: '100%', p: 0 }}>
           {attackGraph && attackGraph.nodes.length > 0 ? (
-            <svg ref={svgRef} style={{ width: '100%', height: '100%', background: '#0a0e27' }} />
+            <svg ref={svgRef} style={{ width: '100%', height: '100%', background: '#02070A' }} />
           ) : (
             <Box
               sx={{

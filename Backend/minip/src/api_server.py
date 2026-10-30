@@ -79,7 +79,7 @@ def get_alerts():
 @app.route('/api/graph', methods=['GET'])
 def get_attack_graph():
     """Get the attack graph"""
-    graph = read_json_file(GRAPH_FILE, {
+    empty_graph = {
         "nodes": [],
         "edges": [],
         "metadata": {
@@ -87,7 +87,17 @@ def get_attack_graph():
             "node_count": 0,
             "edge_count": 0
         }
-    })
+    }
+    graph = read_json_file(GRAPH_FILE, empty_graph)
+    if not graph.get("nodes"):
+        # Filename-mismatch fallback (found in the 2026-10-24 audit): the
+        # collector exports the graph to logs/attack_graph.json, while this
+        # endpoint historically read only logs/collected_graph.json — a file
+        # nothing writes. Fall back to the collector's file so real graphs
+        # actually reach the UI.
+        fallback = read_json_file(LOGS_DIR / 'attack_graph.json', empty_graph)
+        if fallback.get("nodes"):
+            graph = fallback
     return jsonify(graph)
 
 

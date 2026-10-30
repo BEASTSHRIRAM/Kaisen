@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -11,42 +11,109 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Chip,
+  IconButton,
 } from '@mui/material';
 import {
-  Dashboard as DashboardIcon,
-  Warning as WarningIcon,
-  AccountTree as GraphIcon,
-  Security as SecurityIcon,
-  Description as LogsIcon,
-} from '@mui/icons-material';
+  Radar,
+  Siren,
+  Bot,
+  Wrench,
+  Brain,
+  LayoutDashboard,
+  Bell,
+  Network,
+  Shield,
+  ScrollText,
+  Crown,
+  CreditCard,
+  Settings,
+  Globe2,
+  FlaskConical,
+  Server,
+  FileText,
+  LogOut,
+} from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { apiService } from '../services/api';
-import { wsService } from '../services/websocket';
+import { apiService, deriveGraphFromAlerts } from '../services/api';
+import { useCockpit } from '../unified/cockpitStore';
+import { useAuth, PLAN_LABEL } from '../unified/authStore';
+import { DemoBanner, ScenarioControls, Tag } from '../unified/ui';
+import { LogoLockup } from '../unified/Logo';
+import { ACCENT } from '../theme';
 
-const drawerWidth = 240;
+const drawerWidth = 232;
+const ICON_SIZE = 17;
 
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/app/dashboard' },
-  { text: 'Alerts', icon: <WarningIcon />, path: '/app/alerts' },
-  { text: 'Attack Graph', icon: <GraphIcon />, path: '/app/attack-graph' },
-  { text: 'Suspicious IPs', icon: <SecurityIcon />, path: '/app/suspicious-ips' },
-  { text: 'Logs', icon: <LogsIcon />, path: '/app/logs' },
+const sections: { label: string; items: { text: string; icon: React.ReactNode; path: string }[] }[] = [
+  {
+    label: 'Overview',
+    items: [
+      { text: 'Command Center', icon: <Radar size={ICON_SIZE} />, path: '/app/command' },
+      { text: 'Incidents', icon: <Siren size={ICON_SIZE} />, path: '/app/incidents' },
+      { text: 'Attack Graph', icon: <Network size={ICON_SIZE} />, path: '/app/attack-graph' },
+    ],
+  },
+  {
+    label: 'Agent',
+    items: [
+      { text: 'Agent Cockpit', icon: <Bot size={ICON_SIZE} />, path: '/app/cockpit' },
+      { text: 'Tool Registry', icon: <Wrench size={ICON_SIZE} />, path: '/app/tools' },
+      { text: 'Memory Inspector', icon: <Brain size={ICON_SIZE} />, path: '/app/memory' },
+    ],
+  },
+  {
+    label: 'Platform',
+    items: [
+      { text: 'Fleet — Servers', icon: <Server size={ICON_SIZE} />, path: '/app/fleet' },
+      { text: 'Attack Lab', icon: <FlaskConical size={ICON_SIZE} />, path: '/app/lab' },
+      { text: 'Threat Intel', icon: <Globe2 size={ICON_SIZE} />, path: '/app/threat-intel' },
+      { text: 'Audit & Compliance', icon: <ScrollText size={ICON_SIZE} />, path: '/app/audit' },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { text: 'Plans', icon: <Crown size={ICON_SIZE} />, path: '/app/plans' },
+      { text: 'Billing & Usage', icon: <CreditCard size={ICON_SIZE} />, path: '/app/billing' },
+      { text: 'Settings', icon: <Settings size={ICON_SIZE} />, path: '/app/settings' },
+    ],
+  },
+  {
+    label: 'Host monitors (original)',
+    items: [
+      { text: 'Host Dashboard', icon: <LayoutDashboard size={ICON_SIZE} />, path: '/app/dashboard' },
+      { text: 'Alerts', icon: <Bell size={ICON_SIZE} />, path: '/app/alerts' },
+      { text: 'Suspicious IPs', icon: <Shield size={ICON_SIZE} />, path: '/app/suspicious-ips' },
+      { text: 'Logs', icon: <FileText size={ICON_SIZE} />, path: '/app/logs' },
+    ],
+  },
 ];
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { connectionStatus, setConnectionStatus, addAlert, setCurrentMetrics, addMetricsToHistory } = useStore();
+  const { connectionStatus, setConnectionStatus, setCurrentMetrics, addMetricsToHistory } = useStore();
+  const demoActive = useCockpit((s) => s.demoActive);
+  const playing = useCockpit((s) => s.playing);
+  const tick = useCockpit((s) => s.tick);
+  const { user, plan, onboarded, serverName, signOut } = useAuth();
+
+  // Journey guard: Login → Plans → Setup → app. Anyone landing in the app
+  // without finishing the earlier steps is sent back to the right one.
+  useEffect(() => {
+    if (!user) navigate('/login', { replace: true });
+    else if (!plan) navigate('/welcome/plans', { replace: true });
+    else if (!onboarded) navigate('/welcome/setup', { replace: true });
+  }, [user, plan, onboarded, navigate]);
+
+  // Global scenario-replay engine: advances everywhere, on every page.
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(tick, 1600);
+    return () => clearInterval(id);
+  }, [playing, tick]);
 
   useEffect(() => {
-    // Initialize Socket.IO connection for real-time updates
-    const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'http://localhost:8000';
-    
-    // Note: Socket.IO connection will be established automatically
-    // For now, we'll use polling as fallback
-    
-    // Fetch initial data
     const fetchInitialData = async () => {
       try {
         const [metrics, alerts, graph, ips, logs] = await Promise.all([
@@ -57,71 +124,57 @@ export default function Layout() {
           apiService.getHistory({ limit: 100 }),
         ]);
 
+        // Attack-graph filename-mismatch fallback (frontend side): if the
+        // API graph is empty but real alerts/IPs exist, derive a graph.
+        const usableGraph =
+          graph && graph.nodes && graph.nodes.length > 0
+            ? graph
+            : ips.length > 0
+              ? deriveGraphFromAlerts(alerts, ips)
+              : graph;
+
         useStore.setState({
           currentMetrics: metrics,
           alerts,
-          attackGraph: graph,
+          attackGraph: usableGraph,
           suspiciousIPs: ips,
           logs,
         });
-
         setConnectionStatus({ connected: true, lastUpdate: new Date(), error: null });
-      } catch (error) {
-        console.error('Failed to fetch initial data:', error);
+      } catch {
         setConnectionStatus({ connected: false, error: 'Failed to connect to backend' });
       }
     };
 
     fetchInitialData();
 
-    // Polling for real-time updates (every 2 seconds for near real-time)
+    // Polling for live metrics (the frontend's WebSocket client is
+    // protocol-incompatible with the backend's Socket.IO — audit, 24 Oct —
+    // so polling remains the honest live path).
     const interval = setInterval(async () => {
       try {
         const metrics = await apiService.getLatestMetrics();
         setCurrentMetrics(metrics);
         addMetricsToHistory(metrics);
         setConnectionStatus({ connected: true, lastUpdate: new Date(), error: null });
-      } catch (error) {
+      } catch {
         setConnectionStatus({ connected: false, error: 'Connection lost' });
       }
-    }, 2000); // Update every 2 seconds for near real-time
+    }, 2000);
 
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: `calc(100% - ${drawerWidth}px)`,
-          ml: `${drawerWidth}px`,
-          bgcolor: 'background.paper',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-        elevation={0}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Kaisen Security Monitor
-          </Typography>
-          <Chip
-            label={connectionStatus.connected ? 'Connected' : 'Disconnected'}
-            color={connectionStatus.connected ? 'success' : 'error'}
-            size="small"
-            sx={{ mr: 2 }}
-          />
-          {connectionStatus.lastUpdate && (
-            <Typography variant="caption" color="text.secondary">
-              Last update: {connectionStatus.lastUpdate.toLocaleTimeString()}
-            </Typography>
-          )}
-        </Toolbar>
-      </AppBar>
+  const initials = (user?.name || 'K')
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
+  return (
+    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
       <Drawer
         sx={{
           width: drawerWidth,
@@ -129,54 +182,120 @@ export default function Layout() {
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            bgcolor: 'background.paper',
-            borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+            bgcolor: '#060D12',
+            borderRight: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            flexDirection: 'column',
           },
         }}
         variant="permanent"
         anchor="left"
       >
-        <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 2 }}>
-          <SecurityIcon sx={{ fontSize: 40, color: 'primary.main', mr: 1 }} />
-          <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
-            KAISEN
+        <Box sx={{ px: 2.25, pt: 2.5, pb: 1.5 }}>
+          <LogoLockup size={30} stacked />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5, lineHeight: 1.45 }}>
+            Security for businesses running AI agents on their own servers.
           </Typography>
-        </Toolbar>
-        <List>
-          {menuItems.map((item) => (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                selected={location.pathname === item.path}
-                onClick={() => navigate(item.path)}
-                sx={{
-                  '&.Mui-selected': {
-                    bgcolor: 'rgba(0, 212, 255, 0.1)',
-                    borderRight: '3px solid',
-                    borderColor: 'primary.main',
-                  },
-                }}
+        </Box>
+
+        {sections.map((section) => (
+          <Box key={section.label} sx={{ px: 1.25, mt: 1 }}>
+            <Typography variant="caption" sx={{ px: 1, textTransform: 'uppercase', letterSpacing: '0.13em', color: 'text.secondary', fontWeight: 650, fontSize: '0.62rem' }}>
+              {section.label}
+            </Typography>
+            <List dense sx={{ pt: 0.5 }}>
+              {section.items.map((item) => {
+                const active = location.pathname === item.path;
+                return (
+                  <ListItem key={item.text} disablePadding sx={{ mb: 0.25 }}>
+                    <ListItemButton
+                      selected={active}
+                      onClick={() => navigate(item.path)}
+                      sx={{
+                        borderRadius: '8px',
+                        py: 0.7,
+                        '&.Mui-selected': { bgcolor: 'rgba(2,151,222,0.1)' },
+                        '&.Mui-selected:hover': { bgcolor: 'rgba(2,151,222,0.15)' },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 32, color: active ? ACCENT : '#7E93A1' }}>
+                        {item.icon}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={item.text}
+                        primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: active ? 620 : 450, color: active ? 'text.primary' : 'text.secondary' }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </Box>
+        ))}
+
+        <Box sx={{ mt: 'auto', p: 1.75 }}>
+          {plan === 'free' && (
+            <Box sx={{ p: 1.5, mb: 1.25, borderRadius: '10px', border: '1px solid rgba(2,151,222,0.35)', bgcolor: 'rgba(2,151,222,0.06)' }}>
+              <Typography variant="caption" sx={{ fontWeight: 650, display: 'block' }}>You're on Free</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Cockpit feeds, compliance exports and Slack alerts are Pro.
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: 'primary.main', fontWeight: 650, cursor: 'pointer', display: 'block', mt: 0.75 }}
+                onClick={() => navigate('/app/plans')}
               >
-                <ListItemIcon sx={{ color: location.pathname === item.path ? 'primary.main' : 'inherit' }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
+                Compare plans →
+              </Typography>
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, p: 1.25, borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', bgcolor: 'rgba(255,255,255,0.02)' }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(2,151,222,0.14)', color: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0 }}>
+              {initials}
+            </Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 650, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user?.name || 'Operator'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Server size={11} /> {serverName || 'vps-blr-01'} · {plan ? PLAN_LABEL[plan].split('·')[0].trim() : '—'}
+              </Typography>
+            </Box>
+            <IconButton
+              size="small"
+              title="Sign out (resets the demo journey)"
+              onClick={() => { signOut(); navigate('/login'); }}
+              sx={{ color: 'text.secondary' }}
+            >
+              <LogOut size={16} />
+            </IconButton>
+          </Box>
+        </Box>
       </Drawer>
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          bgcolor: 'background.default',
-          p: 3,
-          mt: 8,
-          overflow: 'auto',
-        }}
-      >
-        <Outlet />
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <AppBar position="static" elevation={0} sx={{ bgcolor: '#060D12', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <Toolbar sx={{ minHeight: 56, gap: 2 }}>
+            <Typography sx={{ fontWeight: 620, flexGrow: 1, fontSize: '0.95rem' }}>
+              Kaisen Unified <span style={{ color: '#5D7280', fontWeight: 450 }}>· host + AI-agent security</span>
+            </Typography>
+            {demoActive ? (
+              <Tag tone="warn">DEMO MODE</Tag>
+            ) : connectionStatus.connected ? (
+              <Tag tone="accent">LIVE BACKEND</Tag>
+            ) : (
+              <Tag>BACKEND OFFLINE</Tag>
+            )}
+            <ScenarioControls size="small" />
+          </Toolbar>
+        </AppBar>
+
+        <Box component="main" sx={{ flexGrow: 1, overflow: 'auto', p: 3 }}>
+          {demoActive && location.pathname !== '/app/command' && location.pathname !== '/app/cockpit' && (
+            <DemoBanner compact />
+          )}
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );

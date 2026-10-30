@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+import { LogoMark } from '../../unified/Logo';
 import { Box, Typography, Button, Container, Grid, Card, CardContent } from '@mui/material';
 import {
-  Security as SecurityIcon,
-  Speed as SpeedIcon,
-  Visibility as VisibilityIcon,
-  AutoFixHigh as AutoFixHighIcon,
+  SmartToy as AgentIcon,
+  AccountTree as StoryIcon,
+  FactCheck as ExplainIcon,
+  ReceiptLong as AuditIcon,
 } from '@mui/icons-material';
 
 export default function LandingPage() {
@@ -12,24 +13,28 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <SecurityIcon sx={{ fontSize: 48 }} />,
-      title: 'Real-Time Threat Detection',
-      description: 'AI-powered anomaly detection identifies security threats in real-time',
+      icon: <StoryIcon sx={{ fontSize: 40 }} />,
+      title: 'One incident, one story',
+      description:
+        'A suspicious prompt, the file the agent opened because of it, and the host anomaly that followed — correlated into a single cause → effect story, not four separate alerts.',
     },
     {
-      icon: <SpeedIcon sx={{ fontSize: 48 }} />,
-      title: 'Instant Response',
-      description: 'Automated incident response with reinforcement learning',
+      icon: <AgentIcon sx={{ fontSize: 40 }} />,
+      title: 'Agent Cockpit',
+      description:
+        'Watch the agent itself: what it is doing right now, every tool call it makes, what sits in its memory and context window, and what the session is costing.',
     },
     {
-      icon: <VisibilityIcon sx={{ fontSize: 48 }} />,
-      title: 'Attack Visualization',
-      description: 'Interactive attack graphs show complete threat landscape',
+      icon: <ExplainIcon sx={{ fontSize: 40 }} />,
+      title: 'Reasons, in plain language',
+      description:
+        'Every flag ships with a SHAP-style explanation of the signals that drove it — system-prompt extraction attempts, prompt-length spikes, failed tool retries — so a human can judge it.',
     },
     {
-      icon: <AutoFixHighIcon sx={{ fontSize: 48 }} />,
-      title: 'Intelligent Analysis',
-      description: 'Deep learning models detect patterns invisible to traditional systems',
+      icon: <AuditIcon sx={{ fontSize: 40 }} />,
+      title: 'Audit log built for India',
+      description:
+        'Which agent accessed what data, when, and who approved each intervention — exportable for DPDP and CERT-In reporting.',
     },
   ];
 
@@ -37,94 +42,61 @@ export default function LandingPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)',
+        bgcolor: '#02070A',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        position: 'relative',
-        overflow: 'hidden',
+        py: 8,
+        overflowY: 'auto',
       }}
     >
-      {/* Animated background elements */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          opacity: 0.1,
-          background: `
-            radial-gradient(circle at 20% 50%, #00d4ff 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, #ff4081 0%, transparent 50%)
-          `,
-        }}
-      />
-
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-        <Box sx={{ textAlign: 'center', mb: 8 }}>
-          <SecurityIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 700,
-              mb: 2,
-              background: 'linear-gradient(45deg, #00d4ff 30%, #ff4081 90%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            KAISEN
+      <Container maxWidth="lg">
+        <Box sx={{ textAlign: 'center', mb: 7 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2.5 }}>
+            <LogoMark size={64} />
+          </Box>
+          <Typography variant="h2" sx={{ fontWeight: 750, letterSpacing: '0.04em', mb: 1.5, fontSize: '3.2rem' }}>
+            KAISEN <span style={{ color: '#0297DE' }}>UNIFIED</span>
           </Typography>
-          <Typography variant="h5" color="text.secondary" sx={{ mb: 4 }}>
-            AI-Powered Cybersecurity Monitoring Platform
+          <Typography variant="h5" sx={{ mb: 2.5, fontWeight: 550 }}>
+            Security for businesses running AI agents on their own servers
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
-            Protect your data center infrastructure with advanced machine learning, real-time anomaly detection,
-            and automated incident response powered by deep reinforcement learning.
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4.5, maxWidth: 640, mx: 'auto', lineHeight: 1.65 }}>
+            Guardrails only see the prompt. Network monitors only see the machine. Kaisen watches{' '}
+            <strong style={{ color: '#FCFFFF' }}>both together</strong> — and connects an attack across them.
+            Kaisen recommends; a human always approves.
           </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => navigate('/app/dashboard')}
-            sx={{
-              px: 6,
-              py: 2,
-              fontSize: '1.1rem',
-              background: 'linear-gradient(45deg, #00d4ff 30%, #0099cc 90%)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #00d4ff 60%, #0099cc 100%)',
-              },
-            }}
-          >
-            Launch Dashboard
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => navigate('/login')}
+              sx={{ px: 4.5, py: 1.6, bgcolor: 'primary.main', color: '#FCFFFF', fontWeight: 650, '&:hover': { bgcolor: '#4DB6E8' } }}
+            >
+              Launch Kaisen — sign in
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate('/signup')}
+              sx={{ px: 4.5, py: 1.6, borderColor: 'rgba(255,255,255,0.2)', color: 'text.primary' }}
+            >
+              Create a free account
+            </Button>
+          </Box>
         </Box>
 
-        <Grid container spacing={3}>
-          {features.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card
-                sx={{
-                  height: '100%',
-                  bgcolor: 'rgba(20, 27, 45, 0.6)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(0, 212, 255, 0.2)',
-                  transition: 'all 0.3s',
-                  '&:hover': {
-                    transform: 'translateY(-8px)',
-                    border: '1px solid rgba(0, 212, 255, 0.5)',
-                    boxShadow: '0 8px 24px rgba(0, 212, 255, 0.2)',
-                  },
-                }}
-              >
-                <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                  <Box sx={{ color: 'primary.main', mb: 2 }}>{feature.icon}</Box>
-                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+        <Grid container spacing={2.5}>
+          {features.map((feature) => (
+            <Grid item xs={12} sm={6} md={3} key={feature.title}>
+              <Card sx={{ height: '100%', transition: 'border-color 0.25s', '&:hover': { borderColor: 'rgba(2,151,222,0.45)' } }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ color: 'primary.main', mb: 1.75 }}>{feature.icon}</Box>
+                  <Typography variant="h6" sx={{ mb: 1, fontSize: '1.02rem' }}>
                     {feature.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                     {feature.description}
                   </Typography>
                 </CardContent>
@@ -133,9 +105,10 @@ export default function LandingPage() {
           ))}
         </Grid>
 
-        <Box sx={{ textAlign: 'center', mt: 8 }}>
+        <Box sx={{ textAlign: 'center', mt: 7 }}>
           <Typography variant="caption" color="text.secondary">
-            Powered by TensorFlow, Deep Q-Networks, and NetworkX Graph Analysis
+            Research core: Double DQN incident-response agents trained on CICIDS2017 / CERT-grounded simulators, with SHAP
+            explainability — live host detection today is rule-based and labelled as such in the app.
           </Typography>
         </Box>
       </Container>
