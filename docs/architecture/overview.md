@@ -444,6 +444,19 @@ Trace ID: 4f7d2a1b3c8e9f0d
 └─ Span: websocket_emit (5ms)
 ```
 
+## Kaisen Unified frontend (Oct 2026)
+
+The Unified release adds a product layer on top of the architecture above:
+
+- **Journey state** (`Frontend/src/unified/authStore.ts`): signed-in user, selected plan, onboarding completion — persisted locally in the exhibition build (demo auth); a real auth backend swaps in behind the same store later.
+- **Cockpit state + scenario engine** (`cockpitStore.ts`, `scenario.ts`): drives the Command Center and Agent Cockpit — either from the labelled scenario replay (frames shaped from the repo's own `jailbreak_simulator.py` FSM, `agent_telemetry.py` observation names, and `shap_explain.py` reason format) or, for the original host pages, from the real API polled every 2 s.
+- **Platform data** (`platformData.ts`, `toolStore.ts`): incidents, tool registry/policies, fleet, audit and billing views over one shared data model.
+- **Routing:** React Router with hash routing under `file://` so the packaged Electron build renders (the packaged journey is smoke-tested); browser history routing on http(s).
+- **Design system** (`Frontend/src/theme.ts`): Midnight Black `#02070A`, Electric Blue `#0297DE` primary, Cantaloupe Orange `#FC734D` single accent; Lucide icons; Inter / Space Grotesk / JetBrains Mono.
+- **Backend change in this release:** `/api/graph` falls back to the collector's `logs/attack_graph.json` when `logs/collected_graph.json` is empty — the attack graph now reaches the UI.
+
+See [Kaisen Unified — Overview](../unified/overview.md) for the product-level description and the honesty ledger.
+
 ## Summary
 
 Kaisen's architecture is designed for:

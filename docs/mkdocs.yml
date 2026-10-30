@@ -1,5 +1,5 @@
 site_name: Kaisen Documentation
-site_description: AI-Powered Security Monitoring System Documentation
+site_description: Kaisen Unified — security for businesses running AI agents on their own servers (host + AI-agent monitoring, correlated incident stories)
 site_author: Kaisen Team
 docs_dir: .
 theme:
@@ -29,7 +29,7 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/kaisen
+      link: https://github.com/BEASTSHRIRAM/Kaisen
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -54,6 +54,9 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Kaisen Unified:
+    - Overview: unified/overview.md
+    - Exhibition Demo Guide: unified/exhibition-demo.md
   - Getting Started:
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quickstart.md
