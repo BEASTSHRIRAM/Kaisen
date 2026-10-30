@@ -8,10 +8,17 @@ Kaisen is an intelligent, dual-layer security monitoring system that protects yo
 
 ![Dashboard](imgs/dashboard.jpeg)
 
+## Kaisen Unified (new — Oct 2026)
+
+Kaisen is now also **Kaisen Unified**: security for a business that runs AI agents on its own servers. The host machine and the AI agent on it are monitored together and correlated into **one plain-English incident story** (prompt → agent action → host anomaly), with human-approved responses, subscription plans (Free / Pro ₹1,999 per server/month / Team), an AWS-style connect-your-server setup, a live **Agent Cockpit** (tool calls, memory, context), and an **Attack Lab** of playable attack scenarios.
+
+- [Unified Overview](unified/overview.md) — concept, journey, every page, and the honesty ledger (what is real vs demo today)
+- [Exhibition Demo Guide](unified/exhibition-demo.md) — how to run it and the 3-minute click-through
+
 ## Key Features
 
 - **Real-Time Monitoring**: Monitor CPU, memory, processes, network connections, and failed logins with live updates every 7 seconds
-- **AI-Powered Anomaly Detection**: Deep Q-Network (DQN) trained on 994 episodes for intelligent threat detection
+- **RL Research Core**: a Deep Q-Network (DQN) trained and evaluated **in simulation** on CICIDS2017/CERT-derived attack simulators — live detection today is rule-based (see the Unified honesty ledger)
 - **Attack Graph Visualization**: Interactive D3.js graph showing attack paths and relationships
 - **Suspicious IP Tracking**: Monitor and analyze suspicious IP addresses with risk scoring
 - **Dual-Layer Architecture**: OS telemetry + LLM agent session monitoring
